@@ -33,13 +33,11 @@ interface MenuItem {
   base_price: string;
   category: number;
   is_vegetarian: boolean;
+  is_available: boolean;
   serving_type_display?: string;
   ingredients?: string;
-}
-  is_available: boolean;
   image_url?: string;
   allergens?: string[];
-  ingredients?: string[];
 }
 
 export default function MenuPage() {

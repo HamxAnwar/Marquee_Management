@@ -14,13 +14,65 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    """Serializer for UserProfile model"""
-    user = UserSerializer(read_only=True)
+    """Serializer for User with profile information"""
+    phone_number = serializers.CharField(source='userprofile.phone', read_only=True)
+    address = serializers.CharField(source='userprofile.address', read_only=True)
+    preferred_contact = serializers.CharField(source='userprofile.preferred_contact', read_only=True)
+    role = serializers.SerializerMethodField()
     
     class Meta:
-        model = UserProfile
-        fields = ['user', 'phone', 'address', 'preferred_contact', 'created_at']
-        read_only_fields = ['created_at']
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 
+                 'phone_number', 'address', 'preferred_contact', 'role', 'is_staff', 'is_active']
+    
+    def get_role(self, obj):
+        if obj.is_superuser:
+            return 'admin'
+        elif obj.is_staff:
+            return 'staff'
+        return 'customer'
+    
+    def update(self, instance, validated_data):
+        # Handle userprofile data
+        profile_data = {}
+        if 'userprofile' in validated_data:
+            profile_data = validated_data.pop('userprofile')
+        
+        # Update user fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        # Update profile fields
+        if profile_data:
+            profile, created = UserProfile.objects.get_or_create(user=instance)
+            for attr, value in profile_data.items():
+                setattr(profile, attr, value)
+            profile.save()
+        
+        return instance
+
+
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    """Serializer for user registration"""
+    password = serializers.CharField(write_only=True, min_length=8)
+    phone_number = serializers.CharField(required=False, allow_blank=True)
+    
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password', 'first_name', 'last_name', 'phone_number']
+    
+    def create(self, validated_data):
+        phone_number = validated_data.pop('phone_number', '')
+        user = User.objects.create_user(**validated_data)
+        
+        # Create associated UserProfile
+        UserProfile.objects.create(
+            user=user,
+            phone=phone_number
+        )
+        
+        return user
 
 
 class HallSerializer(serializers.ModelSerializer):

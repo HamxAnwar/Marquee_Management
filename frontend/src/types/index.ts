@@ -17,11 +17,17 @@ export interface User {
 }
 
 export interface UserProfile {
-  user: User;
-  phone: string;
-  address: string;
-  preferred_contact: 'phone' | 'email' | 'both';
-  created_at: string;
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone_number?: string;
+  address?: string;
+  preferred_contact?: 'phone' | 'email' | 'both';
+  role: 'admin' | 'staff' | 'customer';
+  is_staff: boolean;
+  is_active: boolean;
 }
 
 // Hall Types

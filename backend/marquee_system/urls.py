@@ -21,7 +21,13 @@ from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from rest_framework.documentation import include_docs_urls
 from rest_framework_simplejwt.views import TokenRefreshView
-from apps.core.auth_views import CustomTokenObtainPairView, current_user
+from apps.core.auth_views import (
+    CustomTokenObtainPairView, 
+    current_user, 
+    register, 
+    logout, 
+    change_password
+)
 
 # Main API router
 api_router = DefaultRouter()
@@ -33,6 +39,9 @@ urlpatterns = [
     path('api/auth/login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/auth/user/', current_user, name='current_user'),
+    path('api/auth/register/', register, name='register'),
+    path('api/auth/logout/', logout, name='logout'),
+    path('api/auth/change-password/', change_password, name='change_password'),
     
     # API endpoints
     path('api/', include('apps.core.urls')),  # This includes /api/halls/, /api/users/ etc.
