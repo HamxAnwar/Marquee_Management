@@ -204,7 +204,7 @@ export default function MenuPage() {
                 <SelectItem value="">All Prices</SelectItem>
                 <SelectItem value="budget">Budget (≤$15)</SelectItem>
                 <SelectItem value="mid">Mid-range ($15-30)</SelectItem>
-                <SelectItem value="premium">Premium (>$30)</SelectItem>
+                <SelectItem value="premium">Premium (&gt;$30)</SelectItem>
               </SelectContent>
             </Select>
           </div>
