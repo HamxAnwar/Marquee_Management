@@ -1,0 +1,215 @@
+MARQUEE BOOKING AND PRICING SYSTEM
+
+Technical Guide and Documentation
+RoboSoft Innovations (SMC-Private) Limited
+
+================================================================================
+
+1. PROJECT OVERVIEW
+
+The Marquee Booking and Pricing System is a web-based platform designed to automate event booking and pricing for marquees and event halls.
+
+It enables customers to:
+
+Select a hall or event space
+
+Choose menu items or get menu suggestions based on their budget
+
+Enter the number of guests and view real-time total pricing
+
+Proceed with booking and, in later phases, online payment
+
+This system reduces manual negotiation by providing transparent, data-driven pricing.
+The MVP will launch for Sultanat Marquee, Quetta, and later be adapted for other venues.
+
+2. SYSTEM FEATURES
+
+Customer Panel (Web, with future mobile app):
+
+View available halls and select event date
+
+Choose menu items and customize freely
+
+See live total and per-head pricing
+
+Option to “Suggest Menu Within My Budget”
+
+Booking confirmation and digital invoice generation
+
+Admin Panel (Web):
+
+Manage halls, dates, and availability
+
+Add, edit, or delete menu items and prices
+
+Define guest-based discount tiers
+
+Review, confirm, or cancel bookings
+
+Generate invoices and reports
+
+Pricing Engine:
+
+Applies discounts based on number of guests
+
+Provides both “custom selection” and “budget-based suggestion” pricing modes
+
+Calculates total and per-head cost dynamically
+
+Booking & Payment Workflow:
+
+Customer selects hall and date
+
+Enters number of guests
+
+Selects items or requests suggestions
+
+System calculates total automatically
+
+Customer confirms booking
+
+Online payments (planned for future phase)
+
+3. TECHNICAL ARCHITECTURE
+
+Frontend:
+
+Developed using Next.js (React) with Tailwind and Shadcn/UI
+
+Responsive and SEO-optimized for both desktop and mobile users
+
+Backend (MVP):
+
+Django with Django REST Framework (DRF)
+
+Handles all data models, API endpoints, authentication, and pricing logic
+
+Backend (Future Phase):
+
+Rust-based Axum microservice for high-performance pricing and suggestion computations
+
+Communicates with the Django backend via internal API
+
+Database:
+
+PostgreSQL as the main database
+
+Redis for caching pricing computations and suggestions
+
+Deployment:
+
+Containerized using Docker
+
+Reverse proxy and load balancing via Nginx
+
+Deployed on a cloud host such as DigitalOcean or Hetzner
+
+4. API STRUCTURE (CONCEPTUAL)
+
+The system’s backend exposes RESTful APIs for:
+
+Menu management
+
+Bookings and availability
+
+Pricing and suggestion logic
+
+User and admin authentication
+
+All APIs follow standardized response formats and include validation, authentication, and permission layers.
+
+5. DATA MODELS
+
+Core entities:
+
+MenuItem (stores menu item name, category, and base price)
+
+DiscountTier (defines guest-based discount ranges)
+
+Booking (stores booking details, selected items, total, and guest count)
+
+User/Admin (manages authentication and access control)
+
+6. PRICING LOGIC
+
+Custom Menu Selection:
+
+Customers freely select dishes.
+
+The system applies base prices and adjusts them with discount tiers based on guest count.
+
+Total price is displayed instantly.
+
+Budget-Based Suggestion:
+
+Customers enter a total budget and guest count.
+
+The system determines a target per-head budget.
+
+It then generates two to three suggested menu combinations that fit within ±10% of the target range.
+
+Customers can customize these suggested menus, and pricing recalculates automatically.
+
+Discount Tiering:
+Larger guest counts result in proportionally lower per-head costs through discount ranges.
+
+7. FUTURE EXPANSIONS
+
+Multi-venue and multi-tenant SaaS model
+
+Partner integrations (decor, catering, photography, etc.)
+
+Data analytics and performance dashboards
+
+AI-based recommendation engine for optimized menu combinations
+
+Mobile app using React Native
+
+E-signature contract generation and digital booking receipts
+
+8. ADMINISTRATION AND USER ROLES
+
+Role-based access control for Admins and Customers
+
+Secure login and session management
+
+Admin dashboard for managing all operational data
+
+9. PERFORMANCE AND SECURITY
+
+Optimized queries and caching for fast computation
+
+Rate limiting and authentication for all APIs
+
+HTTPS-only communication and secure session handling
+
+Periodic data backup and access logging
+
+Redis caching for high-frequency pricing and menu lookups
+
+10. DEPLOYMENT STRATEGY
+
+Version-controlled through GitHub
+
+CI/CD automation via GitHub Actions or similar tools
+
+Dockerized environment for backend, frontend, and supporting services
+
+Cloud deployment using Nginx as reverse proxy
+
+Logging and error tracking through Sentry or similar platform
+
+11. TESTING AND QUALITY ASSURANCE
+
+Unit and integration testing for pricing and booking modules
+
+End-to-end testing of APIs
+
+Manual UAT for core booking flow
+
+Performance and stress testing of pricing engine
+
+12. COMMUNICATION AND CONTACT
+
+Company: RoboSoft Innovations (SMC-Private) Limited
+Email: robosoftinnovations@outlook.com
