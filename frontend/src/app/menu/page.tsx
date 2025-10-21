@@ -30,10 +30,12 @@ interface MenuItem {
   id: number;
   name: string;
   description: string;
-  price: string;
+  base_price: string;
   category: number;
-  category_name?: string;
   is_vegetarian: boolean;
+  serving_type_display?: string;
+  ingredients?: string;
+}
   is_available: boolean;
   image_url?: string;
   allergens?: string[];
@@ -99,9 +101,9 @@ export default function MenuPage() {
                             (dietaryFilter === 'non-vegetarian' && !item.is_vegetarian);
       
       const matchesPrice = !priceFilter || priceFilter === 'all' || 
-                          (priceFilter === 'budget' && parseFloat(item.price) <= 15) ||
-                          (priceFilter === 'mid' && parseFloat(item.price) > 15 && parseFloat(item.price) <= 30) ||
-                          (priceFilter === 'premium' && parseFloat(item.price) > 30);
+                          (priceFilter === 'budget' && parseFloat(item.base_price) <= 500) ||
+                          (priceFilter === 'mid' && parseFloat(item.base_price) > 500 && parseFloat(item.base_price) <= 1000) ||
+                          (priceFilter === 'premium' && parseFloat(item.base_price) > 1000);
 
       return matchesSearch && matchesCategory && matchesDietary && matchesPrice && item.is_available;
     });
@@ -202,9 +204,9 @@ export default function MenuPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Prices</SelectItem>
-                <SelectItem value="budget">Budget (≤$15)</SelectItem>
-                <SelectItem value="mid">Mid-range ($15-30)</SelectItem>
-                <SelectItem value="premium">Premium (&gt;$30)</SelectItem>
+                <SelectItem value="budget">Budget (≤PKR 500)</SelectItem>
+                <SelectItem value="mid">Mid-range (PKR 500-1000)</SelectItem>
+                <SelectItem value="premium">Premium (&gt;PKR 1000)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -246,7 +248,10 @@ export default function MenuPage() {
                                 </CardDescription>
                               </div>
                               <Badge variant="secondary" className="ml-2">
-                                ${parseFloat(item.price).toFixed(2)}
+                                PKR {parseFloat(item.base_price).toFixed(0)}
+                                {item.serving_type_display && (
+                                  <span className="text-xs ml-1">/{item.serving_type_display.toLowerCase()}</span>
+                                )}
                               </Badge>
                             </div>
                           </CardHeader>
@@ -348,7 +353,10 @@ export default function MenuPage() {
                                 </CardDescription>
                               </div>
                               <Badge variant="secondary" className="ml-2">
-                                ${parseFloat(item.price).toFixed(2)}
+                                PKR {parseFloat(item.base_price).toFixed(0)}
+                                {item.serving_type_display && (
+                                  <span className="text-xs ml-1">/{item.serving_type_display.toLowerCase()}</span>
+                                )}
                               </Badge>
                             </div>
                           </CardHeader>

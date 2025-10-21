@@ -41,9 +41,10 @@ interface MenuItem {
   id: number;
   name: string;
   description: string;
-  price: string;
+  base_price: string;
   category: number;
   is_vegetarian: boolean;
+  serving_type_display?: string;
 }
 
 interface BookingFormData {
@@ -163,7 +164,7 @@ export default function BookingPage() {
     
     const menuTotal = formData.selected_menu_items.reduce((total, itemId) => {
       const item = menuItems.find(m => m.id === itemId);
-      return total + (item ? parseFloat(item.price) : 0);
+      return total + (item ? parseFloat(item.base_price) : 0);
     }, 0);
 
     const guestCount = parseInt(formData.guest_count) || 0;
@@ -318,7 +319,7 @@ export default function BookingPage() {
                     <SelectContent>
                       {halls.map((hall) => (
                         <SelectItem key={hall.id} value={hall.id.toString()}>
-                          {hall.name} - Up to {hall.capacity} guests - ${parseFloat(hall.base_price).toLocaleString()}
+                          {hall.name} - Up to {hall.capacity} guests - PKR {parseFloat(hall.base_price).toLocaleString()}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -450,7 +451,10 @@ export default function BookingPage() {
                         <div className="flex items-start justify-between mb-2">
                           <h4 className="font-medium">{item.name}</h4>
                           <Badge variant="secondary">
-                            ${parseFloat(item.price).toFixed(2)}
+                            PKR {parseFloat(item.base_price).toFixed(0)}
+                            {item.serving_type_display && (
+                              <span className="text-xs ml-1">/{item.serving_type_display.toLowerCase()}</span>
+                            )}
                           </Badge>
                         </div>
                         <p className="text-sm text-gray-600 mb-2">{item.description}</p>
@@ -472,9 +476,9 @@ export default function BookingPage() {
                     <strong>Selected: {formData.selected_menu_items.length} items</strong>
                     {formData.selected_menu_items.length > 0 && formData.guest_count && (
                       <span className="ml-2">
-                        (Total menu cost: ${(formData.selected_menu_items.reduce((total, itemId) => {
+                        (Total menu cost: PKR {(formData.selected_menu_items.reduce((total, itemId) => {
                           const item = menuItems.find(m => m.id === itemId);
-                          return total + (item ? parseFloat(item.price) : 0);
+                          return total + (item ? parseFloat(item.base_price) : 0);
                         }, 0) * parseInt(formData.guest_count)).toLocaleString()})
                       </span>
                     )}
@@ -517,7 +521,7 @@ export default function BookingPage() {
                       return item ? (
                         <div key={itemId} className="flex justify-between">
                           <span>{item.name}</span>
-                          <span>${parseFloat(item.price).toFixed(2)} per person</span>
+                          <span>PKR {parseFloat(item.base_price).toFixed(0)} {item.serving_type_display ? `per ${item.serving_type_display.toLowerCase()}` : 'per person'}</span>
                         </div>
                       ) : null;
                     })}
@@ -538,7 +542,7 @@ export default function BookingPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold">Estimated Total:</span>
                     <span className="text-2xl font-bold text-primary">
-                      ${calculateTotal().toLocaleString()}
+                      PKR {calculateTotal().toLocaleString()}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 mt-1">

@@ -231,7 +231,7 @@ export default function HallsPage() {
                       </span>
                     </div>
                     <Badge variant="secondary">
-                      From ${parseFloat(hall.base_price).toLocaleString()}
+                      From PKR {parseFloat(hall.base_price).toLocaleString()}
                     </Badge>
                   </div>
 
