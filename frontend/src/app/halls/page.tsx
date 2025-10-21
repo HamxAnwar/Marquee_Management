@@ -63,7 +63,7 @@ export default function HallsPage() {
                            hall.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            hall.location.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesCapacity = !capacityFilter || 
+      const matchesCapacity = !capacityFilter || capacityFilter === 'all' || 
                              (capacityFilter === 'small' && hall.capacity <= 50) ||
                              (capacityFilter === 'medium' && hall.capacity > 50 && hall.capacity <= 150) ||
                              (capacityFilter === 'large' && hall.capacity > 150);
@@ -146,7 +146,7 @@ export default function HallsPage() {
                 <SelectValue placeholder="Filter by capacity" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Capacities</SelectItem>
+                <SelectItem value="all">All Capacities</SelectItem>
                 <SelectItem value="small">Small (up to 50)</SelectItem>
                 <SelectItem value="medium">Medium (51-150)</SelectItem>
                 <SelectItem value="large">Large (150+)</SelectItem>

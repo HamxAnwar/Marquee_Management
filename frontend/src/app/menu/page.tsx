@@ -94,11 +94,11 @@ export default function MenuPage() {
       const matchesCategory = selectedCategory === 'all' || 
                              item.category.toString() === selectedCategory;
       
-      const matchesDietary = !dietaryFilter || 
+      const matchesDietary = !dietaryFilter || dietaryFilter === 'all' || 
                             (dietaryFilter === 'vegetarian' && item.is_vegetarian) ||
                             (dietaryFilter === 'non-vegetarian' && !item.is_vegetarian);
       
-      const matchesPrice = !priceFilter || 
+      const matchesPrice = !priceFilter || priceFilter === 'all' || 
                           (priceFilter === 'budget' && parseFloat(item.price) <= 15) ||
                           (priceFilter === 'mid' && parseFloat(item.price) > 15 && parseFloat(item.price) <= 30) ||
                           (priceFilter === 'premium' && parseFloat(item.price) > 30);
@@ -189,7 +189,7 @@ export default function MenuPage() {
                 <SelectValue placeholder="Dietary" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Options</SelectItem>
+                <SelectItem value="all">All Options</SelectItem>
                 <SelectItem value="vegetarian">Vegetarian</SelectItem>
                 <SelectItem value="non-vegetarian">Non-Vegetarian</SelectItem>
               </SelectContent>
@@ -201,7 +201,7 @@ export default function MenuPage() {
                 <SelectValue placeholder="Price Range" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Prices</SelectItem>
+                <SelectItem value="all">All Prices</SelectItem>
                 <SelectItem value="budget">Budget (≤$15)</SelectItem>
                 <SelectItem value="mid">Mid-range ($15-30)</SelectItem>
                 <SelectItem value="premium">Premium (&gt;$30)</SelectItem>
