@@ -1,25 +1,32 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Checkbox } from '@/components/ui/checkbox';
-import { SparklesIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
-import { APP_NAME } from '@/constants';
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
+import { SparklesIcon, EyeIcon, EyeOffIcon } from "lucide-react";
+import { APP_NAME } from "@/constants";
+import { authApi } from "@/services/auth";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
     agreeToTerms: false,
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -30,16 +37,16 @@ export default function RegisterPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors((prev: any) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
   };
@@ -48,35 +55,35 @@ export default function RegisterPage() {
     const newErrors: any = {};
 
     if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required';
+      newErrors.firstName = "First name is required";
     }
-    
+
     if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
+      newErrors.lastName = "Last name is required";
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = "Email is invalid";
     }
 
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
+      newErrors.phone = "Phone number is required";
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = "Passwords do not match";
     }
 
     if (!formData.agreeToTerms) {
-      newErrors.agreeToTerms = 'You must agree to the terms and conditions';
+      newErrors.agreeToTerms = "You must agree to the terms and conditions";
     }
 
     setErrors(newErrors);
@@ -85,7 +92,7 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -93,37 +100,35 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: formData.email,
-          email: formData.email,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          password: formData.password,
-          profile: {
-            phone: formData.phone,
-            role: 'customer'
-          }
-        }),
+      await authApi.register({
+        username: formData.email,
+        email: formData.email,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        password: formData.password,
+        phone_number: formData.phone,
       });
 
-      if (response.ok) {
-        // Registration successful, redirect to login
-        router.push('/auth/login?message=Registration successful! Please sign in.');
-      } else {
-        const errorData = await response.json();
+      // Registration successful, redirect to login
+      router.push(
+        "/auth/login?message=Registration successful! Please sign in.",
+      );
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        const errorData = error.response.data;
         if (errorData.email) {
-          setErrors({ email: 'Email already exists' });
+          setErrors({ email: "Email already exists" });
+        } else if (errorData.username) {
+          setErrors({ email: "Username already exists" });
         } else {
-          setErrors({ general: 'Registration failed. Please try again.' });
+          setErrors({
+            general:
+              "Registration failed. Please check your information and try again.",
+          });
         }
+      } else {
+        setErrors({ general: "Network error. Please try again." });
       }
-    } catch (error) {
-      setErrors({ general: 'Network error. Please try again.' });
     } finally {
       setLoading(false);
     }
@@ -174,7 +179,9 @@ export default function RegisterPage() {
                     className="mt-1"
                   />
                   {errors.firstName && (
-                    <p className="text-sm text-red-600 mt-1">{errors.firstName}</p>
+                    <p className="text-sm text-red-600 mt-1">
+                      {errors.firstName}
+                    </p>
                   )}
                 </div>
 
@@ -191,7 +198,9 @@ export default function RegisterPage() {
                     className="mt-1"
                   />
                   {errors.lastName && (
-                    <p className="text-sm text-red-600 mt-1">{errors.lastName}</p>
+                    <p className="text-sm text-red-600 mt-1">
+                      {errors.lastName}
+                    </p>
                   )}
                 </div>
               </div>
@@ -236,7 +245,7 @@ export default function RegisterPage() {
                   <Input
                     id="password"
                     name="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     required
                     value={formData.password}
                     onChange={handleChange}
@@ -266,7 +275,7 @@ export default function RegisterPage() {
                   <Input
                     id="confirmPassword"
                     name="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
+                    type={showConfirmPassword ? "text" : "password"}
                     required
                     value={formData.confirmPassword}
                     onChange={handleChange}
@@ -286,7 +295,9 @@ export default function RegisterPage() {
                   </button>
                 </div>
                 {errors.confirmPassword && (
-                  <p className="text-sm text-red-600 mt-1">{errors.confirmPassword}</p>
+                  <p className="text-sm text-red-600 mt-1">
+                    {errors.confirmPassword}
+                  </p>
                 )}
               </div>
 
@@ -295,17 +306,26 @@ export default function RegisterPage() {
                   id="agreeToTerms"
                   name="agreeToTerms"
                   checked={formData.agreeToTerms}
-                  onCheckedChange={(checked) => 
-                    setFormData(prev => ({ ...prev, agreeToTerms: checked as boolean }))
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      agreeToTerms: checked as boolean,
+                    }))
                   }
                 />
                 <Label htmlFor="agreeToTerms" className="text-sm">
-                  I agree to the{' '}
-                  <Link href="/terms" className="text-primary hover:text-primary/80">
+                  I agree to the{" "}
+                  <Link
+                    href="/terms"
+                    className="text-primary hover:text-primary/80"
+                  >
                     Terms of Service
-                  </Link>{' '}
-                  and{' '}
-                  <Link href="/privacy" className="text-primary hover:text-primary/80">
+                  </Link>{" "}
+                  and{" "}
+                  <Link
+                    href="/privacy"
+                    className="text-primary hover:text-primary/80"
+                  >
                     Privacy Policy
                   </Link>
                 </Label>
@@ -315,13 +335,13 @@ export default function RegisterPage() {
               )}
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Creating account...' : 'Create Account'}
+                {loading ? "Creating account..." : "Create Account"}
               </Button>
             </form>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                Already have an account?{' '}
+                Already have an account?{" "}
                 <Link
                   href="/auth/login"
                   className="text-primary hover:text-primary/80 font-medium"
@@ -335,10 +355,7 @@ export default function RegisterPage() {
 
         {/* Back to Home */}
         <div className="text-center">
-          <Link
-            href="/"
-            className="text-sm text-gray-600 hover:text-gray-900"
-          >
+          <Link href="/" className="text-sm text-gray-600 hover:text-gray-900">
             ← Back to Home
           </Link>
         </div>

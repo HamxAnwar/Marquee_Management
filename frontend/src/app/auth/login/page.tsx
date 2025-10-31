@@ -1,58 +1,48 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { SparklesIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
-import { APP_NAME } from '@/constants';
+import { useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { SparklesIcon, EyeIcon, EyeOffIcon } from "lucide-react";
+import { APP_NAME } from "@/constants";
+import { useLogin } from "@/hooks/use-auth";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const router = useRouter();
+  const [error, setError] = useState("");
+
+  const loginMutation = useLogin();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
+    setError("");
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: email,
-          password: password,
-        }),
+      await loginMutation.mutateAsync({
+        username: email,
+        password: password,
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Store tokens in localStorage
-        localStorage.setItem('access_token', data.access);
-        localStorage.setItem('refresh_token', data.refresh);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
-        // Redirect to dashboard or intended page
-        router.push('/dashboard');
+      // Success routing is handled by the useLogin hook
+    } catch (error: any) {
+      if (error.response?.status === 400 || error.response?.status === 401) {
+        setError(
+          "Invalid credentials. Please check your username and password.",
+        );
       } else {
-        const errorData = await response.json();
-        setError(errorData.detail || 'Login failed. Please check your credentials.');
+        setError("Network error. Please try again.");
       }
-    } catch (error) {
-      setError('Network error. Please try again.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -88,14 +78,14 @@ export default function LoginPage() {
               )}
 
               <div>
-                <Label htmlFor="email">Email or Username</Label>
+                <Label htmlFor="email">Username</Label>
                 <Input
                   id="email"
                   type="text"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email or username"
+                  placeholder="Enter your username"
                   className="mt-1"
                 />
               </div>
@@ -105,7 +95,7 @@ export default function LoginPage() {
                 <div className="relative">
                   <Input
                     id="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -135,14 +125,18 @@ export default function LoginPage() {
                 </Link>
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Signing in...' : 'Sign In'}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loginMutation.isPending}
+              >
+                {loginMutation.isPending ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                Don't have an account?{' '}
+                Don't have an account?{" "}
                 <Link
                   href="/auth/register"
                   className="text-primary hover:text-primary/80 font-medium"
@@ -154,10 +148,19 @@ export default function LoginPage() {
 
             {/* Demo Credentials */}
             <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm font-medium text-blue-900 mb-2">Demo Credentials:</p>
+              <p className="text-sm font-medium text-blue-900 mb-2">
+                Demo Credentials:
+              </p>
               <div className="text-xs text-blue-800 space-y-1">
-                <p><strong>Customer:</strong> demo@customer.com / password123</p>
-                <p><strong>Admin:</strong> admin / admin123</p>
+                <p>
+                  <strong>Customer:</strong> customer / customer123
+                </p>
+                <p>
+                  <strong>Venue Owner:</strong> venue_owner / owner123
+                </p>
+                <p>
+                  <strong>Platform Admin:</strong> admin / admin123
+                </p>
               </div>
             </div>
           </CardContent>
@@ -165,10 +168,7 @@ export default function LoginPage() {
 
         {/* Back to Home */}
         <div className="text-center">
-          <Link
-            href="/"
-            className="text-sm text-gray-600 hover:text-gray-900"
-          >
+          <Link href="/" className="text-sm text-gray-600 hover:text-gray-900">
             ← Back to Home
           </Link>
         </div>

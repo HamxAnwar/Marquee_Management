@@ -1,9 +1,19 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
-import { authApi, type LoginRequest, type RegisterRequest, type ChangePasswordRequest } from '@/services/auth';
-import { setAuthToken, setRefreshToken, removeTokens, getAuthToken } from '@/lib/api-client';
-import { queryKeys } from '@/lib/react-query';
-import type { UserProfile } from '@/types';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import {
+  authApi,
+  type LoginRequest,
+  type RegisterRequest,
+  type ChangePasswordRequest,
+} from "@/services/auth";
+import {
+  setAuthToken,
+  setRefreshToken,
+  removeTokens,
+  getAuthToken,
+} from "@/lib/api-client";
+import { queryKeys } from "@/lib/react-query";
+import type { UserProfile } from "@/types";
 
 // Get current user
 export const useCurrentUser = () => {
@@ -26,15 +36,34 @@ export const useLogin = () => {
       // Store tokens
       setAuthToken(data.access);
       setRefreshToken(data.refresh);
-      
+
       // Set user data in cache
       queryClient.setQueryData(queryKeys.auth.user, data.user);
-      
-      // Redirect to admin dashboard
-      router.push('/admin');
+
+      // Role-based routing
+      const userRole = data.user.role;
+      switch (userRole) {
+        case "platform_admin":
+          // Platform administrators go to Django admin
+          window.location.href = "http://localhost:8000/admin";
+          break;
+        case "venue_owner":
+          // Venue owners go to their management dashboard
+          router.push("/admin");
+          break;
+        case "customer":
+          // Customers go to marketplace
+          router.push("/marketplace");
+          break;
+        default:
+          // Unknown role, redirect to marketplace as fallback
+          console.warn("Unknown user role:", userRole);
+          router.push("/marketplace");
+          break;
+      }
     },
     onError: (error) => {
-      console.error('Login failed:', error);
+      console.error("Login failed:", error);
     },
   });
 };
@@ -50,15 +79,15 @@ export const useLogout = () => {
       // Clear tokens and cache
       removeTokens();
       queryClient.clear();
-      
+
       // Redirect to login
-      router.push('/admin/login');
+      router.push("/admin/login");
     },
     onError: () => {
       // Even if logout fails on server, clear local data
       removeTokens();
       queryClient.clear();
-      router.push('/admin/login');
+      router.push("/admin/login");
     },
   });
 };
@@ -81,7 +110,8 @@ export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (userData: Partial<UserProfile>) => authApi.updateProfile(userData),
+    mutationFn: (userData: Partial<UserProfile>) =>
+      authApi.updateProfile(userData),
     onSuccess: (data) => {
       // Update user data in cache
       queryClient.setQueryData(queryKeys.auth.user, data);
@@ -92,7 +122,8 @@ export const useUpdateProfile = () => {
 // Change password mutation
 export const useChangePassword = () => {
   return useMutation({
-    mutationFn: (passwordData: ChangePasswordRequest) => authApi.changePassword(passwordData),
+    mutationFn: (passwordData: ChangePasswordRequest) =>
+      authApi.changePassword(passwordData),
   });
 };
 
@@ -106,7 +137,7 @@ export const useResetPassword = () => {
 // Auth helper hooks
 export const useAuthCheck = () => {
   const { data: user, isLoading, error } = useCurrentUser();
-  
+
   return {
     user,
     isLoading,
@@ -119,21 +150,21 @@ export const useAuthCheck = () => {
 export const useHasRole = (roles: string | string[]) => {
   const { user } = useAuthCheck();
   const roleArray = Array.isArray(roles) ? roles : [roles];
-  
+
   return user ? roleArray.includes(user.role) : false;
 };
 
 // Hook to check if user has admin privileges
 export const useIsAdmin = () => {
-  return useHasRole(['admin']);
+  return useHasRole(["platform_admin"]);
 };
 
 // Hook to check if user has manager privileges
 export const useIsManager = () => {
-  return useHasRole(['admin', 'manager']);
+  return useHasRole(["platform_admin", "venue_owner"]);
 };
 
 // Hook to check if user has staff privileges
 export const useIsStaff = () => {
-  return useHasRole(['admin', 'manager', 'staff']);
+  return useHasRole(["platform_admin", "venue_owner", "staff"]);
 };
