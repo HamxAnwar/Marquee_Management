@@ -42,15 +42,17 @@ class Booking(models.Model):
 
     # Identifiers
     booking_id = models.CharField(max_length=20, unique=True, editable=False)
+    is_guest_booking = models.BooleanField(default=False, help_text="Whether this booking was made by a guest user")
 
     # Relationships
     organization = models.ForeignKey(
         Organization, on_delete=models.CASCADE, related_name="bookings"
     )
     customer = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="bookings"
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="bookings",
+        help_text="Customer who made the booking. Null for guest bookings."
     )
-    hall = models.ForeignKey(Hall, on_delete=models.CASCADE, related_name="bookings")
+    hall = models.ForeignKey(Hall, on_delete=models.CASCADE, related_name="bookings", null=True, blank=True)
 
     # Event details
     event_date = models.DateField()
@@ -195,6 +197,19 @@ class Booking(models.Model):
                 f"Guest count ({self.guest_count}) exceeds hall capacity ({self.hall.capacity})"
             )
 
+        # Validate no conflicting bookings for the same hall/date/time
+        if not self.pk:  # Only for new bookings
+            conflicting_bookings = Booking.objects.filter(
+                hall=self.hall,
+                event_date=self.event_date,
+                event_time=self.event_time,
+                status__in=['pending', 'confirmed']
+            ).exclude(pk=self.pk)
+            if conflicting_bookings.exists():
+                raise ValidationError(
+                    f"Hall is already booked for this date and time. Please choose a different time or hall."
+                )
+
     @property
     def is_upcoming(self):
         return self.event_date > timezone.now().date()
@@ -296,7 +311,7 @@ class BookingStatusHistory(models.Model):
     )
     old_status = models.CharField(max_length=20)
     new_status = models.CharField(max_length=20)
-    changed_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    changed_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     reason = models.TextField(blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
@@ -507,7 +522,7 @@ def create_status_history(sender, instance, created, **kwargs):
             booking=instance,
             old_status="",
             new_status=instance.status,
-            changed_by=instance.customer,
+            changed_by=instance.customer if instance.customer else None,
             reason="Booking created",
         )
 

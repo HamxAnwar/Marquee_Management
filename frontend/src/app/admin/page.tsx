@@ -28,7 +28,7 @@ export default function AdminPage() {
         
         <div className="bg-white p-6 rounded-lg shadow border">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Revenue</h3>
-          <p className="text-3xl font-bold text-purple-600">₹2.4L</p>
+           <p className="text-3xl font-bold text-purple-600">PKR 2.4L</p>
           <p className="text-sm text-gray-500 mt-1">This month</p>
         </div>
         

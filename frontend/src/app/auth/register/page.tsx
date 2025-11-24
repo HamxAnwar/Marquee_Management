@@ -32,7 +32,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,7 +44,7 @@ export default function RegisterPage() {
 
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors((prev: any) => ({
+      setErrors((prev: Record<string, string>) => ({
         ...prev,
         [name]: "",
       }));
@@ -52,7 +52,7 @@ export default function RegisterPage() {
   };
 
   const validateForm = () => {
-    const newErrors: any = {};
+    const newErrors: Record<string, string> = {};
 
     if (!formData.firstName.trim()) {
       newErrors.firstName = "First name is required";
@@ -113,7 +113,7 @@ export default function RegisterPage() {
       router.push(
         "/auth/login?message=Registration successful! Please sign in.",
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.response?.status === 400) {
         const errorData = error.response.data;
         if (errorData.email) {

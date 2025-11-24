@@ -2,6 +2,7 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.views import APIView
 from django.db.models import Q, Count, Sum, Avg
 from django.utils import timezone
 from datetime import datetime, timedelta
@@ -374,7 +375,7 @@ class OrganizationViewSet(viewsets.ModelViewSet):
             )
 
 
-class PlatformAdminViewSet(viewsets.ViewSet):
+class PlatformAdminViewSet(APIView):
     """
     Platform administration endpoints
     Only accessible by platform administrators
@@ -382,10 +383,26 @@ class PlatformAdminViewSet(viewsets.ViewSet):
 
     permission_classes = [IsAuthenticated, IsPlatformAdmin]
 
-    def list(self, request):
-        """Get platform-wide statistics"""
+    def get(self, request):
+        """Get platform-wide statistics for software developer platform"""
 
-        # Organization statistics
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        # User/Developer statistics
+        total_users = User.objects.count()
+        active_users = User.objects.filter(is_active=True).count()
+        platform_admins = User.objects.filter(
+            userprofile__user_type="platform_admin"
+        ).count()
+        venue_owners = User.objects.filter(
+            userprofile__user_type="venue_owner"
+        ).count()
+        customers = User.objects.filter(
+            userprofile__user_type="customer"
+        ).count()
+
+        # Organization statistics (now represents developer projects/companies)
         total_organizations = Organization.objects.count()
         active_organizations = Organization.objects.filter(status="active").count()
         pending_organizations = Organization.objects.filter(status="pending").count()
@@ -393,82 +410,67 @@ class PlatformAdminViewSet(viewsets.ViewSet):
             status="suspended"
         ).count()
 
-        # Booking statistics
-        total_bookings = Booking.objects.count()
-        today_bookings = Booking.objects.filter(
-            created_at__date=timezone.now().date()
-        ).count()
-        this_month_bookings = Booking.objects.filter(
-            created_at__year=timezone.now().year, created_at__month=timezone.now().month
+        # System health metrics
+        recent_registrations = User.objects.filter(
+            date_joined__gte=timezone.now() - timedelta(days=7)
         ).count()
 
-        # Revenue statistics
-        total_revenue = (
-            Booking.objects.filter(status="completed").aggregate(Sum("total_amount"))[
-                "total_amount__sum"
-            ]
-            or 0
-        )
+        # API usage (simplified - would need actual API logging)
+        api_calls_today = 0  # Placeholder - would need API logging system
 
-        monthly_revenue = (
-            Booking.objects.filter(
-                status="completed",
-                event_date__year=timezone.now().year,
-                event_date__month=timezone.now().month,
-            ).aggregate(Sum("total_amount"))["total_amount__sum"]
-            or 0
-        )
-
-        # Platform commission
-        platform_commission = (
-            Booking.objects.filter(status="completed").aggregate(Sum("platform_fee"))[
-                "platform_fee__sum"
-            ]
-            or 0
-        )
-
-        # Top organizations by bookings
+        # Top organizations by user count (representing most active projects)
         top_organizations = Organization.objects.annotate(
-            booking_count=Count("bookings")
-        ).order_by("-booking_count")[:10]
+            user_count=Count("members")
+        ).order_by("-user_count")[:10]
 
         # Recent activities
+        recent_users = User.objects.filter(
+            date_joined__gte=timezone.now() - timedelta(days=7)
+        ).order_by("-date_joined")[:5]
+
         recent_organizations = Organization.objects.filter(
             created_at__gte=timezone.now() - timedelta(days=7)
         ).order_by("-created_at")[:5]
 
-        recent_bookings = Booking.objects.filter(
-            created_at__gte=timezone.now() - timedelta(days=7)
-        ).order_by("-created_at")[:10]
-
         stats = {
+            "users": {
+                "total": total_users,
+                "active": active_users,
+                "platform_admins": platform_admins,
+                "venue_owners": venue_owners,
+                "customers": customers,
+            },
             "organizations": {
                 "total": total_organizations,
                 "active": active_organizations,
                 "pending": pending_organizations,
                 "suspended": suspended_organizations,
             },
-            "bookings": {
-                "total": total_bookings,
-                "today": today_bookings,
-                "this_month": this_month_bookings,
-            },
-            "revenue": {
-                "total": float(total_revenue),
-                "monthly": float(monthly_revenue),
-                "platform_commission": float(platform_commission),
+            "system_health": {
+                "recent_registrations": recent_registrations,
+                "api_calls_today": api_calls_today,
             },
             "top_organizations": [
                 {
                     "id": org.id,
                     "name": org.name,
-                    "booking_count": org.booking_count,
+                    "user_count": org.user_count,
                     "status": org.status,
                     "subscription_plan": org.subscription_plan,
                 }
                 for org in top_organizations
             ],
             "recent_activities": {
+                "users": [
+                    {
+                        "id": user.id,
+                        "username": user.username,
+                        "email": user.email,
+                        "user_type": getattr(user.userprofile, 'user_type', 'unknown'),
+                        "created_at": user.date_joined,
+                    }
+                    for user in recent_users
+                ],
                 "organizations": [
                     {
                         "id": org.id,
@@ -478,40 +480,35 @@ class PlatformAdminViewSet(viewsets.ViewSet):
                     }
                     for org in recent_organizations
                 ],
-                "bookings": [
-                    {
-                        "id": booking.booking_id,
-                        "organization": booking.organization.name,
-                        "customer": booking.customer.get_full_name(),
-                        "total_amount": float(booking.total_amount),
-                        "status": booking.status,
-                        "created_at": booking.created_at,
-                    }
-                    for booking in recent_bookings
-                ],
             },
         }
 
         return Response(stats)
 
-    @action(detail=False, methods=["get", "patch"])
-    def settings(self, request):
-        """Get or update platform settings"""
+class PlatformSettingsView(APIView):
+    """
+    Platform settings management
+    Only accessible by platform administrators
+    """
 
+    permission_classes = [IsAuthenticated, IsPlatformAdmin]
+
+    def get(self, request):
+        """Get platform settings"""
         settings, created = PlatformSettings.objects.get_or_create()
+        serializer = PlatformSettingsSerializer(settings)
+        return Response(serializer.data)
 
-        if request.method == "GET":
-            serializer = PlatformSettingsSerializer(settings)
+    def patch(self, request):
+        """Update platform settings"""
+        settings, created = PlatformSettings.objects.get_or_create()
+        serializer = PlatformSettingsSerializer(
+            settings, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
             return Response(serializer.data)
-
-        elif request.method == "PATCH":
-            serializer = PlatformSettingsSerializer(
-                settings, data=request.data, partial=True
-            )
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=["get"])
     def pending_approvals(self, request):
@@ -644,4 +641,54 @@ class MarketplaceViewSet(viewsets.ReadOnlyModelViewSet):
         from apps.menu.serializers import MenuPackageSerializer
 
         serializer = MenuPackageSerializer(packages, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["get"])
+    def bookings(self, request, pk=None):
+        """Get bookings for an organization (for venue owners/managers)"""
+        organization = self.get_object()
+
+        # Check permissions - only organization owners/managers can access
+        from .permissions import IsOrganizationAdminOrManager
+        permission = IsOrganizationAdminOrManager()
+        if not permission.has_object_permission(request, self, organization):
+            return Response(
+                {"error": "Permission denied"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        bookings = organization.bookings.select_related(
+            'customer', 'hall'
+        ).prefetch_related('menu_items')
+
+        # Apply filters
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            bookings = bookings.filter(status=status_filter)
+
+        hall_filter = request.query_params.get('hall')
+        if hall_filter:
+            bookings = bookings.filter(hall_id=hall_filter)
+
+        # Date filters
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        if start_date:
+            bookings = bookings.filter(event_date__gte=start_date)
+        if end_date:
+            bookings = bookings.filter(event_date__lte=end_date)
+
+        # Search
+        search = request.query_params.get('search')
+        if search:
+            bookings = bookings.filter(
+                Q(booking_id__icontains=search) |
+                Q(customer__first_name__icontains=search) |
+                Q(customer__last_name__icontains=search)
+            )
+
+        bookings = bookings.order_by('-created_at')
+
+        from apps.bookings.serializers import BookingListSerializer
+        serializer = BookingListSerializer(bookings, many=True)
         return Response(serializer.data)

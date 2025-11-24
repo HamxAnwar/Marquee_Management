@@ -18,6 +18,10 @@ import {
   User,
   UserProfile,
   LoginFormData,
+  Organization,
+  PlatformStats,
+  PlatformSettings,
+  BulkActionResponse,
 } from '@/types';
 
 class ApiClient {
@@ -37,7 +41,7 @@ class ApiClient {
       (config) => {
         const token = this.getAuthToken();
         if (token) {
-          config.headers.Authorization = `Token ${token}`;
+          config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
       },
@@ -264,6 +268,36 @@ class ApiClient {
 
   async updateUserProfile(data: Partial<UserProfile>): Promise<UserProfile> {
     return this.patch(`${API_ENDPOINTS.USER_PROFILES}/me/`, data);
+  }
+
+  // Platform Admin API
+  async getPlatformStats(): Promise<PlatformStats> {
+    return this.get<PlatformStats>(API_ENDPOINTS.PLATFORM_ADMIN);
+  }
+
+  async getPlatformSettings(): Promise<PlatformSettings> {
+    return this.get<PlatformSettings>(API_ENDPOINTS.PLATFORM_SETTINGS);
+  }
+
+  async updatePlatformSettings(data: Partial<PlatformSettings>): Promise<PlatformSettings> {
+    return this.patch<PlatformSettings>(API_ENDPOINTS.PLATFORM_SETTINGS, data);
+  }
+
+  async getPendingOrganizations(): Promise<Organization[]> {
+    return this.get<Organization[]>(API_ENDPOINTS.PLATFORM_PENDING);
+  }
+
+  async bulkApproveOrganizations(organizationIds: number[]): Promise<BulkActionResponse> {
+    return this.post<BulkActionResponse>(API_ENDPOINTS.PLATFORM_BULK_APPROVE, {
+      organization_ids: organizationIds,
+    });
+  }
+
+  async bulkSuspendOrganizations(organizationIds: number[], reason?: string): Promise<BulkActionResponse> {
+    return this.post<BulkActionResponse>(API_ENDPOINTS.PLATFORM_BULK_SUSPEND, {
+      organization_ids: organizationIds,
+      reason,
+    });
   }
 }
 

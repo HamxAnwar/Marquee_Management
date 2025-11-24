@@ -223,15 +223,15 @@ class PlatformSettingsSerializer(serializers.ModelSerializer):
         model = PlatformSettings
         fields = [
             "id",
-            "default_commission_rate",
-            "auto_approve_organizations",
-            "platform_fee_percentage",
+            "platform_name",
+            "platform_email",
+            "platform_phone",
             "support_email",
-            "no_reply_email",
             "maintenance_mode",
             "maintenance_message",
-            "site_title",
-            "site_description",
+            "api_rate_limit",
+            "allow_user_registration",
+            "require_email_verification",
             "created_at",
             "updated_at",
         ]

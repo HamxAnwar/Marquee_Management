@@ -43,25 +43,37 @@ const mockCategories: MenuCategory[] = [
     id: 1,
     name: "Appetizers",
     description: "Delicious starters and appetizers",
+    display_order: 1,
     is_active: true,
+    items_count: 1,
+    created_at: "2024-01-15T10:00:00Z",
   },
   {
     id: 2,
     name: "Main Course",
     description: "Traditional and contemporary main dishes",
+    display_order: 2,
     is_active: true,
+    items_count: 2,
+    created_at: "2024-01-15T10:05:00Z",
   },
   {
     id: 3,
     name: "Desserts",
     description: "Sweet treats and desserts",
+    display_order: 3,
     is_active: true,
+    items_count: 1,
+    created_at: "2024-01-15T10:10:00Z",
   },
   {
     id: 4,
     name: "Beverages",
     description: "Refreshing drinks and beverages",
+    display_order: 4,
     is_active: false,
+    items_count: 0,
+    created_at: "2024-01-15T10:15:00Z",
   },
 ];
 
@@ -73,8 +85,16 @@ const mockMenuItems: MenuItem[] = [
     category: 1,
     category_name: "Appetizers",
     base_price: "150.00",
+    serving_type: "per_piece",
+    serving_type_display: "Per Piece",
     is_vegetarian: true,
     is_available: true,
+    ingredients: "Potatoes, peas, spices, flour",
+    preparation_time: 15,
+    display_order: 1,
+    variants: [],
+    created_at: "2024-01-15T10:15:00Z",
+    updated_at: "2024-01-15T10:15:00Z",
   },
   {
     id: 2,
@@ -83,8 +103,16 @@ const mockMenuItems: MenuItem[] = [
     category: 2,
     category_name: "Main Course",
     base_price: "450.00",
+    serving_type: "per_plate",
+    serving_type_display: "Per Plate",
     is_vegetarian: false,
     is_available: true,
+    ingredients: "Basmati rice, chicken, spices, onions",
+    preparation_time: 45,
+    display_order: 2,
+    variants: [],
+    created_at: "2024-01-15T10:15:00Z",
+    updated_at: "2024-01-15T10:15:00Z",
   },
   {
     id: 3,
@@ -93,8 +121,16 @@ const mockMenuItems: MenuItem[] = [
     category: 3,
     category_name: "Desserts",
     base_price: "120.00",
+    serving_type: "per_piece",
+    serving_type_display: "Per Piece",
     is_vegetarian: true,
     is_available: true,
+    ingredients: "Milk solids, sugar, cardamom",
+    preparation_time: 30,
+    display_order: 3,
+    variants: [],
+    created_at: "2024-01-15T10:15:00Z",
+    updated_at: "2024-01-15T10:15:00Z",
   },
   {
     id: 4,
@@ -103,8 +139,16 @@ const mockMenuItems: MenuItem[] = [
     category: 2,
     category_name: "Main Course",
     base_price: "550.00",
+    serving_type: "per_plate",
+    serving_type_display: "Per Plate",
     is_vegetarian: false,
     is_available: false,
+    ingredients: "Mutton, onions, tomatoes, spices",
+    preparation_time: 60,
+    display_order: 4,
+    variants: [],
+    created_at: "2024-01-15T10:15:00Z",
+    updated_at: "2024-01-15T10:15:00Z",
   },
 ];
 
@@ -234,7 +278,7 @@ export default function MenuPage() {
         return (
           <div className="flex items-center space-x-2">
             <DollarSign className="h-4 w-4 text-gray-500" />
-            <span className="font-medium">₹{price.toLocaleString()}</span>
+            <span className="font-medium">PKR {price.toLocaleString()}</span>
           </div>
         );
       },
@@ -341,9 +385,9 @@ export default function MenuPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ₹{Math.round(menuItems.reduce((sum, item) => sum + parseFloat(item.base_price), 0) / menuItems.length).toLocaleString()}
-            </div>
+             <div className="text-2xl font-bold">
+               PKR {Math.round(menuItems.reduce((sum, item) => sum + parseFloat(item.base_price), 0) / menuItems.length).toLocaleString()}
+             </div>
             <p className="text-xs text-muted-foreground">
               Average item price
             </p>
@@ -439,7 +483,7 @@ export default function MenuPage() {
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="item-price" className="text-right">Price</Label>
-                      <Input id="item-price" type="number" placeholder="Price in ₹" className="col-span-3" />
+                       <Input id="item-price" type="number" placeholder="Price in PKR" className="col-span-3" />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="item-desc" className="text-right">Description</Label>

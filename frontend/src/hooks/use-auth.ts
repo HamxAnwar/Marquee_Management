@@ -40,27 +40,27 @@ export const useLogin = () => {
       // Set user data in cache
       queryClient.setQueryData(queryKeys.auth.user, data.user);
 
-      // Role-based routing
-      const userRole = data.user.role;
-      switch (userRole) {
-        case "platform_admin":
-          // Platform administrators go to Django admin
-          window.location.href = "http://localhost:8000/admin";
-          break;
-        case "venue_owner":
-          // Venue owners go to their management dashboard
-          router.push("/admin");
-          break;
-        case "customer":
-          // Customers go to marketplace
-          router.push("/marketplace");
-          break;
-        default:
-          // Unknown role, redirect to marketplace as fallback
-          console.warn("Unknown user role:", userRole);
-          router.push("/marketplace");
-          break;
-      }
+       // Role-based routing
+       const userRole = data.user.role;
+       switch (userRole) {
+         case "platform_admin":
+           // Platform administrators go to platform admin dashboard
+           router.push("/platform-admin");
+           break;
+         case "venue_owner":
+           // Venue owners go to their management dashboard
+           router.push("/admin");
+           break;
+         case "customer":
+           // Customers go to marketplace
+           router.push("/marketplace");
+           break;
+         default:
+           // Unknown role, redirect to marketplace as fallback
+           console.warn("Unknown user role:", userRole);
+           router.push("/marketplace");
+           break;
+       }
     },
     onError: (error) => {
       console.error("Login failed:", error);

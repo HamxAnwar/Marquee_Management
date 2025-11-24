@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   MapPin,
   Phone,
@@ -67,15 +69,42 @@ interface MenuCategory {
   items_count: number;
 }
 
+interface MenuPackage {
+  id: number;
+  name: string;
+  description: string;
+  package_type: string;
+  package_type_display: string;
+  base_price_per_person: string;
+  min_guests: number;
+  max_guests: number | null;
+  total_items: number;
+  is_active: boolean;
+  is_featured: boolean;
+  package_items?: any[];
+}
+
 // Mock additional data that we don't have in API yet
 const mockAdditionalData = {
   rating: 4.8,
   reviewCount: 127,
-  images: [
-    "https://images.unsplash.com/photo-1519167758481-83f29c8e8d4a?w=800&h=400&fit=crop",
-    "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=600&h=400&fit=crop",
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=400&fit=crop",
-    "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=600&h=400&fit=crop",
+  hallImages: [
+    {
+      hallId: 1,
+      hallName: "Grand Ballroom",
+      images: [
+        "https://images.unsplash.com/photo-1519167758481-83f29c8e8d4a?w=800&h=400&fit=crop",
+        "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=600&h=400&fit=crop",
+      ],
+    },
+    {
+      hallId: 2,
+      hallName: "Garden Lawn",
+      images: [
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=400&fit=crop",
+        "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=600&h=400&fit=crop",
+      ],
+    },
   ],
   amenities: [
     { icon: Car, label: "Free Parking" },
@@ -83,25 +112,6 @@ const mockAdditionalData = {
     { icon: Utensils, label: "Catering Kitchen" },
     { icon: Music, label: "Sound System" },
     { icon: Camera, label: "Photography Area" },
-  ],
-  halls: [
-    {
-      id: 1,
-      name: "Grand Ballroom",
-      capacity: 500,
-      price: "PKR 45,000",
-      description:
-        "Elegant indoor ballroom perfect for weddings and formal events",
-      features: ["AC", "Stage", "Sound System", "Parking"],
-    },
-    {
-      id: 2,
-      name: "Garden Lawn",
-      capacity: 300,
-      price: "PKR 25,000",
-      description: "Beautiful outdoor garden setting for intimate celebrations",
-      features: ["Garden Setting", "Sound System", "Parking"],
-    },
   ],
   menuCategories: [
     {
@@ -156,14 +166,30 @@ export default function VenueDetailPage() {
   const [venue, setVenue] = useState<Venue | null>(null);
   const [halls, setHalls] = useState<Hall[]>([]);
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([]);
+  const [menuPackages, setMenuPackages] = useState<MenuPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<MenuPackage | null>(null);
+  const [packageDetails, setPackageDetails] = useState<any>(null);
+  const [showPackageDialog, setShowPackageDialog] = useState(false);
 
   // Get venue data with fallbacks and error handling
   const venueData = venue
     ? {
         ...venue,
-        images: mockAdditionalData.images,
+        // Collect images from all halls with hall attribution
+        images: halls && halls.length > 0
+          ? halls.flatMap(hall => {
+              const hallMockData = mockAdditionalData.hallImages.find(
+                mock => mock.hallId === hall.id
+              );
+              return hallMockData ? hallMockData.images.map(img => ({
+                url: img,
+                hallName: hall.name,
+                hallId: hall.id
+              })) : [];
+            })
+          : [],
         amenities: mockAdditionalData.amenities,
         rating: venue.avg_rating || mockAdditionalData.rating,
         reviewCount: venue.total_bookings || mockAdditionalData.reviewCount,
@@ -254,6 +280,28 @@ export default function VenueDetailPage() {
         } catch (menuError) {
           console.warn("Menu fetch error:", menuError);
         }
+
+        // Fetch packages
+        try {
+          const packagesResponse = await fetch(
+            `${API_BASE_URL}/api/marketplace/${venueId}/packages/`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            },
+          );
+          if (packagesResponse.ok) {
+            const packagesData = await packagesResponse.json();
+            console.log("Packages data received:", packagesData);
+            setMenuPackages(packagesData);
+          } else {
+            console.warn("Failed to fetch packages:", packagesResponse.status);
+          }
+        } catch (packagesError) {
+          console.warn("Packages fetch error:", packagesError);
+        }
       } catch (err) {
         console.error("Main fetch error:", err);
         setError(
@@ -314,6 +362,12 @@ export default function VenueDetailPage() {
     window.open(`tel:${venue.phone}`, "_self");
   };
 
+  const handleViewPackageDetails = (pkg: MenuPackage) => {
+    setSelectedPackage(pkg);
+    setPackageDetails({ items: pkg.package_items || [] });
+    setShowPackageDialog(true);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -339,43 +393,53 @@ export default function VenueDetailPage() {
           {/* Images */}
           <div className="lg:col-span-2">
             <div className="space-y-4">
-              <div className="aspect-[16/10] rounded-lg overflow-hidden bg-gray-200">
-                <img
-                  src={
-                    venueData?.images[selectedImage] ||
-                    "https://images.unsplash.com/photo-1519167758481-83f29c8e8d4a?w=800&h=400&fit=crop"
-                  }
-                  alt={venue?.name || "Venue"}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src =
-                      "https://via.placeholder.com/800x400/e5e7eb/9ca3af?text=Venue+Image";
-                  }}
-                />
-              </div>
-              <div className="grid grid-cols-4 gap-2">
-                {(venueData?.images || []).map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImage(index)}
-                    className={`aspect-square rounded-lg overflow-hidden border-2 bg-gray-200 ${
-                      selectedImage === index
-                        ? "border-primary"
-                        : "border-gray-200"
-                    }`}
-                  >
-                    <img
-                      src={image}
-                      alt={`${venue?.name || "Venue"} ${index + 1}`}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src =
-                          "https://via.placeholder.com/200x200/e5e7eb/9ca3af?text=Image";
-                      }}
-                    />
-                  </button>
-                ))}
-              </div>
+               <div className="aspect-[16/10] rounded-lg overflow-hidden bg-gray-200 relative">
+                  <Image
+                    src={
+                      venueData?.images[selectedImage]?.url ||
+                      "https://images.unsplash.com/photo-1519167758481-83f29c8e8d4a?w=800&h=400&fit=crop"
+                    }
+                    alt={`${venue?.name || "Venue"} - ${venueData?.images[selectedImage]?.hallName || "Hall"}`}
+                    fill
+                    className="object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src =
+                       "https://via.placeholder.com/800x400/e5e7eb/9ca3af?text=Venue+Image";
+                   }}
+                 />
+                 {venueData?.images[selectedImage] && (
+                   <div className="absolute bottom-4 left-4 bg-black/70 text-white px-3 py-1 rounded-lg text-sm">
+                     {venueData.images[selectedImage].hallName}
+                   </div>
+                 )}
+               </div>
+               <div className="grid grid-cols-4 gap-2">
+                 {(venueData?.images || []).map((image, index) => (
+                   <button
+                     key={index}
+                     onClick={() => setSelectedImage(index)}
+                     className={`aspect-square rounded-lg overflow-hidden border-2 bg-gray-200 relative ${
+                       selectedImage === index
+                         ? "border-primary"
+                         : "border-gray-200"
+                     }`}
+                   >
+                      <Image
+                        src={image.url}
+                        alt={`${venue?.name || "Venue"} - ${image.hallName}`}
+                        fill
+                        className="object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src =
+                            "https://via.placeholder.com/200x200/e5e7eb/9ca3af?text=Image";
+                        }}
+                      />
+                     <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs px-1 py-0.5 truncate">
+                       {image.hallName}
+                     </div>
+                   </button>
+                 ))}
+               </div>
             </div>
           </div>
 
@@ -597,37 +661,75 @@ export default function VenueDetailPage() {
 
             <TabsContent value="menu" className="space-y-6">
               <div className="space-y-6">
-                {menuCategories.length > 0 ? (
-                  menuCategories.map((category, index) => (
-                    <Card key={index}>
-                      <CardHeader>
-                        <CardTitle>{category.name}</CardTitle>
-                        {category.description && (
-                          <p className="text-gray-600">
-                            {category.description}
-                          </p>
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Curated Menu Deals</h3>
+                  <p className="text-gray-600">Choose from our pre-designed packages perfect for your event</p>
+                </div>
+
+                {menuPackages.length > 0 ? (
+                  <div className="grid gap-6">
+                    {menuPackages.map((pkg) => (
+                      <Card key={pkg.id} className={`relative ${pkg.is_featured ? 'ring-2 ring-primary' : ''}`}>
+                        {pkg.is_featured && (
+                          <div className="absolute -top-3 left-4 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
+                            Featured Deal
+                          </div>
                         )}
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-center py-4">
-                          <p className="text-gray-600">
-                            {category.items_count} items available in this
-                            category
-                          </p>
-                          <Button variant="outline" className="mt-2">
-                            View Menu Items
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
+                        <CardContent className="p-6">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex-1">
+                              <h3 className="text-xl font-semibold mb-2">{pkg.name}</h3>
+                              <p className="text-gray-600 mb-3">{pkg.description}</p>
+                              <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
+                                <span className="flex items-center gap-1">
+                                  <Users className="w-4 h-4" />
+                                  {pkg.min_guests}{pkg.max_guests ? `-${pkg.max_guests}` : '+'} guests
+                                </span>
+                                <Badge variant="outline">{pkg.package_type_display}</Badge>
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                {pkg.total_items} delicious items included
+                              </div>
+                            </div>
+                            <div className="text-right ml-4">
+                              <div className="text-2xl font-bold text-primary">
+                                PKR {pkg.base_price_per_person}
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                per person
+                              </div>
+                            </div>
+                          </div>
+                           <div className="flex gap-3">
+                             <Button className="flex-1">
+                               <Calendar className="w-4 h-4 mr-2" />
+                               Select This Deal
+                             </Button>
+                             <Button variant="outline" onClick={() => handleViewPackageDetails(pkg)}>
+                               View Details
+                             </Button>
+                           </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-gray-600">
-                      No menu information available.
+                      No menu packages available.
                     </p>
                   </div>
                 )}
+
+                <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-semibold mb-2">Need a Custom Menu?</h4>
+                  <p className="text-gray-600 text-sm mb-3">
+                    Our expert chefs can create a personalized menu tailored to your preferences and dietary requirements.
+                  </p>
+                  <Button variant="outline" size="sm">
+                    Request Custom Menu
+                  </Button>
+                </div>
               </div>
             </TabsContent>
 
@@ -667,6 +769,84 @@ export default function VenueDetailPage() {
           </Tabs>
         </div>
       </div>
+
+      {/* Package Details Dialog */}
+      <Dialog open={showPackageDialog} onOpenChange={setShowPackageDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">
+              {selectedPackage?.name} - Package Details
+            </DialogTitle>
+          </DialogHeader>
+          {packageDetails && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Package Overview</h3>
+                <p className="text-gray-600 mb-4">{selectedPackage?.description}</p>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium">Price per person:</span> PKR {selectedPackage?.base_price_per_person}
+                  </div>
+                  <div>
+                    <span className="font-medium">Guest range:</span> {selectedPackage?.min_guests}
+                    {selectedPackage?.max_guests ? `-${selectedPackage.max_guests}` : '+'} guests
+                  </div>
+                  <div>
+                    <span className="font-medium">Total items:</span> {selectedPackage?.total_items}
+                  </div>
+                  <div>
+                    <span className="font-medium">Type:</span> {selectedPackage?.package_type_display}
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Menu Items Included</h3>
+                <div className="space-y-3">
+                  {packageDetails.items?.map((item: any, index: number) => (
+                    <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <div className="font-medium">{item.menu_item_name}</div>
+                        <div className="text-sm text-gray-600">{item.menu_item_category}</div>
+                        {item.variant_name && (
+                          <div className="text-sm text-gray-500">Variant: {item.variant_name}</div>
+                        )}
+                        {item.is_optional && (
+                          <Badge variant="outline" className="mt-1 text-xs">Optional</Badge>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm">
+                          {item.quantity_per_person} per person
+                        </div>
+                        {item.additional_cost > 0 && (
+                          <div className="text-sm text-gray-600">
+                            +PKR {item.additional_cost}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="flex gap-3">
+                <Button className="flex-1">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Select This Package
+                </Button>
+                <Button variant="outline" onClick={() => setShowPackageDialog(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

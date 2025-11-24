@@ -119,7 +119,7 @@ export default function BookingPage() {
     }
   };
 
-  const handleInputChange = (field: keyof BookingFormData, value: any) => {
+  const handleInputChange = (field: keyof BookingFormData, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setError('');
   };

@@ -2,25 +2,25 @@
 
 import React from 'react';
 import { ColumnDef } from "@tanstack/react-table";
+import { BookingListItem, Booking } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { 
+import {
   Calendar,
   Clock,
   Users,
@@ -35,65 +35,13 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
-import { BookingListItem } from '@/types';
 import { format } from 'date-fns';
+import { useBookings, useConfirmBooking, useCancelBooking } from '@/hooks/use-bookings';
+import { useCurrentUser } from '@/hooks/use-auth';
 
-// Mock data
-const mockBookings: BookingListItem[] = [
-  {
-    id: 1,
-    customer_name: "John Smith",
-    customer_phone: "+91 98765 43210",
-    customer_email: "john.smith@email.com",
-    event_date: "2024-02-15",
-    event_time: "18:00:00",
-    guest_count: 250,
-    hall_name: "Sultanat Marquee Main Hall",
-    event_type: "wedding",
-    status: "confirmed",
-    total_amount: "75000.00",
-  },
-  {
-    id: 2,
-    customer_name: "Sarah Johnson",
-    customer_phone: "+91 98765 43211",
-    customer_email: "sarah.j@email.com",
-    event_date: "2024-03-20",
-    event_time: "19:30:00",
-    guest_count: 150,
-    hall_name: "Sultanat Marquee Garden Hall",
-    event_type: "birthday",
-    status: "pending",
-    total_amount: "45000.00",
-  },
-  {
-    id: 3,
-    customer_name: "Ahmed Ali",
-    customer_phone: "+91 98765 43212",
-    customer_email: "ahmed.ali@email.com",
-    event_date: "2024-01-10",
-    event_time: "20:00:00",
-    guest_count: 400,
-    hall_name: "Royal Palace Hall",
-    event_type: "corporate",
-    status: "completed",
-    total_amount: "95000.00",
-  },
-  {
-    id: 4,
-    customer_name: "Maria Garcia",
-    customer_phone: "+91 98765 43213",
-    customer_email: "maria.garcia@email.com",
-    event_date: "2024-02-28",
-    event_time: "17:00:00",
-    guest_count: 300,
-    hall_name: "Crystal Ballroom",
-    event_type: "anniversary",
-    status: "cancelled",
-    total_amount: "60000.00",
-  },
-];
+
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -110,21 +58,61 @@ const getStatusBadge = (status: string) => {
   }
 };
 
-const getEventTypeColor = (eventType: string) => {
-  const colors: Record<string, string> = {
-    wedding: 'bg-pink-100 text-pink-800',
-    birthday: 'bg-purple-100 text-purple-800',
-    corporate: 'bg-blue-100 text-blue-800',
-    anniversary: 'bg-green-100 text-green-800',
-    other: 'bg-gray-100 text-gray-800',
+  const getEventTypeColor = (eventType: string) => {
+    const colors: Record<string, string> = {
+      wedding: 'bg-pink-100 text-pink-800',
+      birthday: 'bg-purple-100 text-purple-800',
+      corporate: 'bg-blue-100 text-blue-800',
+      anniversary: 'bg-green-100 text-green-800',
+      graduation: 'bg-blue-100 text-blue-800',
+      religious: 'bg-purple-100 text-purple-800',
+      conference: 'bg-gray-100 text-gray-800',
+      workshop: 'bg-gray-100 text-gray-800',
+      exhibition: 'bg-gray-100 text-gray-800',
+      other: 'bg-gray-100 text-gray-800',
+    };
+    return colors[eventType] || colors.other;
   };
-  return colors[eventType] || colors.other;
-};
 
 export default function BookingsPage() {
-  const [bookings, setBookings] = React.useState<BookingListItem[]>(mockBookings);
+  const { data: user } = useCurrentUser();
+  const userOrganization = user?.owned_organizations?.[0];
+
+  const { data: bookingsData, isLoading, error } = useBookings(
+    userOrganization ? { organization: userOrganization.id } : undefined
+  );
   const [selectedBooking, setSelectedBooking] = React.useState<BookingListItem | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false);
+
+  const confirmBookingMutation = useConfirmBooking(
+    userOrganization ? { organization: userOrganization.id } : undefined
+  );
+  const cancelBookingMutation = useCancelBooking(
+    userOrganization ? { organization: userOrganization.id } : undefined
+  );
+
+  const bookings = React.useMemo(() => bookingsData?.results || [], [bookingsData]);
+
+  const handleConfirmBooking = async (bookingId: number) => {
+    try {
+      await confirmBookingMutation.mutateAsync(bookingId);
+      setIsDetailsDialogOpen(false);
+    } catch (error) {
+      console.error('Failed to confirm booking:', error);
+    }
+  };
+
+  const handleCancelBooking = async (bookingId: number) => {
+    const reason = prompt('Please provide a reason for cancellation:');
+    if (reason) {
+      try {
+        await cancelBookingMutation.mutateAsync({ id: bookingId, reason });
+        setIsDetailsDialogOpen(false);
+      } catch (error) {
+        console.error('Failed to cancel booking:', error);
+      }
+    }
+  };
 
   const columns: ColumnDef<BookingListItem>[] = [
     {
@@ -148,7 +136,7 @@ export default function BookingsPage() {
       header: "Event Date & Time",
       cell: ({ row }) => {
         const booking = row.original;
-        const eventDate = new Date(`${booking.event_date}T${booking.event_time}`);
+        const eventDate = new Date(`${booking.event_date}T${booking.event_time || '00:00:00'}`);
         return (
           <div>
             <div className="flex items-center font-medium">
@@ -203,8 +191,8 @@ export default function BookingsPage() {
         const amount = parseFloat(row.getValue("total_amount"));
         return (
           <div className="flex items-center font-medium">
-            <DollarSign className="h-4 w-4 mr-1 text-gray-500" />
-            ₹{amount.toLocaleString()}
+            <span className="text-gray-500 mr-1">PKR</span>
+            {amount.toLocaleString()}
           </div>
         );
       },
@@ -254,14 +242,23 @@ export default function BookingsPage() {
     },
   ];
 
-  const stats = {
-    totalBookings: bookings.length,
-    confirmedBookings: bookings.filter(b => b.status === 'confirmed').length,
-    pendingBookings: bookings.filter(b => b.status === 'pending').length,
-    totalRevenue: bookings
-      .filter(b => b.status === 'confirmed' || b.status === 'completed')
-      .reduce((sum, b) => sum + parseFloat(b.total_amount), 0),
-  };
+  const stats = React.useMemo(() => {
+    if (!bookings) return {
+      totalBookings: 0,
+      confirmedBookings: 0,
+      pendingBookings: 0,
+      totalRevenue: 0,
+    };
+
+    return {
+      totalBookings: bookings.length,
+      confirmedBookings: bookings.filter((b: BookingListItem) => b.status === 'confirmed').length,
+      pendingBookings: bookings.filter((b: BookingListItem) => b.status === 'pending').length,
+      totalRevenue: bookings
+        .filter((b: BookingListItem) => b.status === 'confirmed' || b.status === 'completed')
+        .reduce((sum: number, b: BookingListItem) => sum + parseFloat(b.total_amount || '0'), 0),
+    };
+  }, [bookings]);
 
   return (
     <div className="space-y-6">
@@ -314,7 +311,7 @@ export default function BookingsPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{stats.totalRevenue.toLocaleString()}</div>
+             <div className="text-2xl font-bold">PKR {stats.totalRevenue.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Confirmed + completed</p>
           </CardContent>
         </Card>
@@ -329,12 +326,23 @@ export default function BookingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DataTable 
-            columns={columns} 
-            data={bookings}
-            searchKey="customer_name"
-            searchPlaceholder="Search by customer name..."
-          />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <span className="ml-2">Loading bookings...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-600">
+              Error loading bookings: {error.message}
+            </div>
+          ) : (
+            <DataTable
+              columns={columns}
+              data={bookings}
+              searchKey="customer_name"
+              searchPlaceholder="Search by customer name..."
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -378,24 +386,24 @@ export default function BookingsPage() {
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg border-b pb-2">Event Details</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Event Type</label>
-                    <p>
-                      <Badge className={`${getEventTypeColor(selectedBooking.event_type)}`}>
-                        {selectedBooking.event_type.charAt(0).toUpperCase() + selectedBooking.event_type.slice(1)}
-                      </Badge>
-                    </p>
-                  </div>
+                   <div>
+                     <label className="text-sm font-medium text-gray-500">Event Type</label>
+                     <p>
+                       <Badge className={`${getEventTypeColor(selectedBooking.event_type)}`}>
+                         {selectedBooking.event_type_display}
+                       </Badge>
+                     </p>
+                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Status</label>
                     <p>{getStatusBadge(selectedBooking.status)}</p>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Date & Time</label>
-                    <p className="font-medium">
-                      {format(new Date(`${selectedBooking.event_date}T${selectedBooking.event_time}`), 'PPP p')}
-                    </p>
-                  </div>
+                   <div>
+                     <label className="text-sm font-medium text-gray-500">Date & Time</label>
+                     <p className="font-medium">
+                       {format(new Date(`${selectedBooking.event_date}T${selectedBooking.event_time || '00:00:00'}`), 'PPP p')}
+                     </p>
+                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Guest Count</label>
                     <p className="flex items-center font-medium">
@@ -419,27 +427,38 @@ export default function BookingsPage() {
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold">Total Amount</span>
-                    <span className="text-2xl font-bold text-green-600">
-                      ₹{parseFloat(selectedBooking.total_amount).toLocaleString()}
-                    </span>
+                     <span className="text-2xl font-bold text-green-600">
+                       PKR {parseFloat(selectedBooking.total_amount).toLocaleString()}
+                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex justify-end space-x-2 pt-4 border-t">
-                <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
-                  Close
-                </Button>
-                <Button variant="outline">
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit Booking
-                </Button>
-                <Button>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Confirm Booking
-                </Button>
-              </div>
+               {/* Actions */}
+               <div className="flex justify-end space-x-2 pt-4 border-t">
+                 <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
+                   Close
+                 </Button>
+                 {selectedBooking.status === 'pending' && (
+                   <>
+                     <Button
+                       variant="destructive"
+                       onClick={() => handleCancelBooking(selectedBooking.id)}
+                       disabled={cancelBookingMutation.isPending}
+                     >
+                       <XCircle className="mr-2 h-4 w-4" />
+                       {cancelBookingMutation.isPending ? 'Cancelling...' : 'Cancel Booking'}
+                     </Button>
+                     <Button
+                       onClick={() => handleConfirmBooking(selectedBooking.id)}
+                       disabled={confirmBookingMutation.isPending}
+                     >
+                       <CheckCircle className="mr-2 h-4 w-4" />
+                       {confirmBookingMutation.isPending ? 'Confirming...' : 'Confirm Booking'}
+                     </Button>
+                   </>
+                 )}
+               </div>
             </div>
           )}
         </DialogContent>

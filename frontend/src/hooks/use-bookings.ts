@@ -10,7 +10,7 @@ import type { PricingRequest } from '@/types';
 // Get bookings with pagination and filters
 export const useBookings = (params?: BookingQueryParams) => {
   return useQuery({
-    queryKey: queryKeys.bookings.list(params),
+    queryKey: ["bookings", params],
     queryFn: () => bookingsApi.getBookings(params),
   });
 };
@@ -124,30 +124,50 @@ export const useUpdateBookingStatus = () => {
 };
 
 // Confirm booking mutation
-export const useConfirmBooking = () => {
+export const useConfirmBooking = (params?: BookingQueryParams) => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (id: number) => bookingsApi.confirmBooking(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.lists() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.detail(id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.stats });
+    onSuccess: (data, id) => {
+      // Optimistic update
+      queryClient.setQueryData(["bookings", params], (oldData: any) => {
+        if (oldData?.results) {
+          return {
+            ...oldData,
+            results: oldData.results.map((b: any) => b.id === id ? { ...b, status: 'confirmed' } : b)
+          };
+        }
+        return oldData;
+      });
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["bookings", id] });
+      queryClient.invalidateQueries({ queryKey: ["bookings", "stats"] });
     },
   });
 };
 
 // Cancel booking mutation
-export const useCancelBooking = () => {
+export const useCancelBooking = (params?: BookingQueryParams) => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ id, reason }: { id: number; reason?: string }) =>
       bookingsApi.cancelBooking(id, reason),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.lists() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.stats });
+    onSuccess: (data, variables) => {
+      // Optimistic update
+      queryClient.setQueryData(["bookings", params], (oldData: any) => {
+        if (oldData?.results) {
+          return {
+            ...oldData,
+            results: oldData.results.map((b: any) => b.id === variables.id ? { ...b, status: 'cancelled' } : b)
+          };
+        }
+        return oldData;
+      });
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["bookings", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["bookings", "stats"] });
     },
   });
 };

@@ -35,7 +35,7 @@ export default function LoginPage() {
         password: password,
       });
       // Success routing is handled by the useLogin hook
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.response?.status === 400 || error.response?.status === 401) {
         setError(
           "Invalid credentials. Please check your username and password.",

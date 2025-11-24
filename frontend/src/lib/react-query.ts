@@ -52,8 +52,11 @@ export const queryKeys = {
   bookings: {
     all: (orgId?: number) =>
       orgId ? ["organizations", orgId, "bookings"] : (["bookings"] as const),
+    lists: () => ["bookings", "lists"] as const,
     detail: (id: string) => ["bookings", id] as const,
     myBookings: ["my-bookings"] as const,
+    stats: ["bookings", "stats"] as const,
+    menuItems: (bookingId: number) => ["bookings", bookingId, "menu-items"] as const,
   },
   pricing: {
     calculation: ["pricing-calculation"] as const,

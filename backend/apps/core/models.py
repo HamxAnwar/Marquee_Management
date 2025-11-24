@@ -341,36 +341,28 @@ class UserProfile(models.Model):
 
 
 class PlatformSettings(models.Model):
-    """Platform-wide settings"""
+    """Platform-wide settings for software developer company"""
 
-    # Commission Settings
-    default_commission_rate = models.DecimalField(
-        max_digits=5, decimal_places=2, default=5.00
+    # Platform Information
+    platform_name = models.CharField(
+        max_length=100, default="Developer Platform"
     )
+    platform_email = models.EmailField(default="admin@developerplatform.com")
+    platform_phone = models.CharField(max_length=20, blank=True)
 
-    # Organization Approval
-    auto_approve_organizations = models.BooleanField(default=False)
+    # Support Settings
+    support_email = models.EmailField(default="support@developerplatform.com")
 
-    # Payment Settings
-    platform_fee_percentage = models.DecimalField(
-        max_digits=5, decimal_places=2, default=2.50
-    )
-
-    # Email Settings
-    support_email = models.EmailField(default="support@marqueebooking.com")
-    no_reply_email = models.EmailField(default="noreply@marqueebooking.com")
-
-    # Maintenance
+    # System Settings
     maintenance_mode = models.BooleanField(default=False)
     maintenance_message = models.TextField(blank=True)
 
-    # SEO
-    site_title = models.CharField(
-        max_length=200, default="MarqueeBooking - Event Venue Platform"
-    )
-    site_description = models.TextField(
-        default="Find and book the perfect venue for your events"
-    )
+    # API Settings
+    api_rate_limit = models.IntegerField(default=1000)
+
+    # User Management
+    allow_user_registration = models.BooleanField(default=True)
+    require_email_verification = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

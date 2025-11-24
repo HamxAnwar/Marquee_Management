@@ -57,8 +57,8 @@ const mockUsers: UserProfile[] = [
     last_name: "Administrator",
     phone_number: "+91 98765 43200",
     role: "admin",
+    is_staff: true,
     is_active: true,
-    date_joined: "2024-01-01T00:00:00Z",
   },
   {
     id: 2,
@@ -68,8 +68,8 @@ const mockUsers: UserProfile[] = [
     last_name: "Johnson",
     phone_number: "+91 98765 43201",
     role: "manager",
+    is_staff: false,
     is_active: true,
-    date_joined: "2024-01-15T00:00:00Z",
   },
   {
     id: 3,
@@ -80,7 +80,6 @@ const mockUsers: UserProfile[] = [
     phone_number: "+91 98765 43202",
     role: "staff",
     is_active: true,
-    date_joined: "2024-02-01T00:00:00Z",
   },
   {
     id: 4,
@@ -91,7 +90,6 @@ const mockUsers: UserProfile[] = [
     phone_number: "+91 98765 43203",
     role: "customer",
     is_active: true,
-    date_joined: "2024-02-10T00:00:00Z",
   },
   {
     id: 5,
@@ -102,7 +100,6 @@ const mockUsers: UserProfile[] = [
     phone_number: "+91 98765 43204",
     role: "customer",
     is_active: false,
-    date_joined: "2024-01-20T00:00:00Z",
   },
 ];
 
@@ -212,18 +209,7 @@ export default function UsersPage() {
         return getStatusBadge(isActive);
       },
     },
-    {
-      accessorKey: "date_joined",
-      header: "Joined Date",
-      cell: ({ row }) => {
-        const dateJoined = new Date(row.getValue("date_joined"));
-        return (
-          <div className="text-sm">
-            {format(dateJoined, 'MMM dd, yyyy')}
-          </div>
-        );
-      },
-    },
+
     {
       id: "actions",
       header: "Actions",
@@ -465,12 +451,7 @@ export default function UsersPage() {
                       {getStatusBadge(selectedUser.is_active)}
                     </div>
                   </div>
-                  <div className="col-span-2">
-                    <label className="text-sm font-medium text-gray-500">Member Since</label>
-                    <p className="font-medium">
-                      {format(new Date(selectedUser.date_joined), 'PPP')}
-                    </p>
-                  </div>
+
                 </div>
               </div>
 

@@ -23,6 +23,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         source="userprofile.preferred_contact", read_only=True
     )
     role = serializers.SerializerMethodField()
+    owned_organizations = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -36,6 +37,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "address",
             "preferred_contact",
             "role",
+            "owned_organizations",
             "is_staff",
             "is_active",
         ]
@@ -50,7 +52,22 @@ class UserProfileSerializer(serializers.ModelSerializer):
                 return "platform_admin"
             elif obj.is_staff:
                 return "staff"
-            return "customer"
+            else:
+                return "customer"
+
+    def get_owned_organizations(self, obj):
+        """Get organizations owned by this user"""
+        from apps.core.models import Organization
+        organizations = Organization.objects.filter(owner=obj)
+        return [
+            {
+                "id": org.id,
+                "name": org.name,
+                "slug": org.slug,
+                "status": org.status,
+            }
+            for org in organizations
+        ]
 
     def update(self, instance, validated_data):
         # Handle userprofile data

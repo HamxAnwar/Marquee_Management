@@ -42,18 +42,18 @@ def api_root(request):
             "version": "1.0",
             "endpoints": {
                 "auth": {
-                    "login": "/api/auth/login/",
-                    "register": "/api/auth/register/",
-                    "user": "/api/auth/user/",
-                    "logout": "/api/auth/logout/",
+                    "login": "/api/v1/auth/login/",
+                    "register": "/api/v1/auth/register/",
+                    "user": "/api/v1/auth/user/",
+                    "logout": "/api/v1/auth/logout/",
                 },
-                "core": "/api/core/",
-                "menu": "/api/menu/",
-                "bookings": "/api/bookings/",
-                "pricing": "/api/pricing/",
-                "organizations": "/api/organizations/",
-                "marketplace": "/api/marketplace/",
-                "admin": "/api/admin/",
+                "core": "/api/v1/core/",
+                "menu": "/api/v1/menu/",
+                "bookings": "/api/v1/bookings/",
+                "pricing": "/api/v1/pricing/",
+                "organizations": "/api/v1/organizations/",
+                "marketplace": "/api/v1/marketplace/",
+                "admin": "/api/v1/admin/",
             },
         }
     )
@@ -65,21 +65,21 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     # JWT Authentication endpoints
     path(
-        "api/auth/login/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"
+        "api/v1/auth/login", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"
     ),
-    path("api/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-    path("api/auth/user/", current_user, name="current_user"),
-    path("api/auth/register/", register, name="register"),
-    path("api/auth/logout/", logout, name="logout"),
-    path("api/auth/change-password/", change_password, name="change_password"),
+    path("api/v1/auth/token/refresh", TokenRefreshView.as_view(), name="token_refresh"),
+    path("api/v1/auth/user", current_user, name="current_user"),
+    path("api/v1/auth/register", register, name="register"),
+    path("api/v1/auth/logout", logout, name="logout"),
+    path("api/v1/auth/change-password", change_password, name="change_password"),
     # API endpoints with proper namespacing
-    path("api/core/", include("apps.core.urls")),
-    path("api/menu/", include("apps.menu.urls")),
-    path("api/bookings/", include("apps.bookings.urls")),
-    path("api/pricing/", include("apps.pricing.urls")),
-    path("api/organizations/", include("apps.organizations.urls")),
+    path("api/v1/core/", include("apps.core.urls")),
+    path("api/v1/menu/", include("apps.menu.urls")),
+     path("api/v1/bookings", include("apps.bookings.urls")),
+    path("api/v1/pricing/", include("apps.pricing.urls")),
+    path("api/v1/organizations/", include("apps.organizations.urls")),
     # Direct marketplace endpoint for frontend compatibility
-    path("api/marketplace/", include("apps.organizations.marketplace_urls")),
+    path("api/v1/marketplace/", include("apps.organizations.marketplace_urls")),
     # DRF auth endpoints
     path("api-auth/", include("rest_framework.urls")),
 ]

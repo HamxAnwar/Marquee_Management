@@ -553,8 +553,21 @@ from django.dispatch import receiver
 
 @receiver(post_save, sender=Booking)
 def create_price_calculation(sender, instance, created, **kwargs):
-    if created:
-        # Create initial price calculation
+    if created and instance.hall:
+        # Create initial price calculation only if hall is assigned
+        PriceCalculation.objects.get_or_create(
+            booking=instance,
+            defaults={
+                "hall_base_price": instance.hall.base_price,
+                "subtotal_before_discount": instance.hall.base_price,
+                "subtotal_after_discount": instance.hall.base_price,
+                "total_before_tax": instance.hall.base_price,
+                "grand_total": instance.hall.base_price,
+                "price_per_person": instance.hall.base_price / instance.guest_count,
+            },
+        )
+    elif not created and instance.hall:
+        # If hall was assigned to an existing booking, create price calculation
         PriceCalculation.objects.get_or_create(
             booking=instance,
             defaults={

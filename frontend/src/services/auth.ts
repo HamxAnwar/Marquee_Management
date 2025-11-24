@@ -1,4 +1,5 @@
 import { api } from "@/lib/api-client";
+import { API_ENDPOINTS } from "@/constants";
 import type { UserProfile } from "@/types";
 
 export interface LoginRequest {
@@ -40,7 +41,7 @@ export const authApi = {
   // Login user
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
     const response = await api.post<LoginResponse>(
-      "/api/auth/login/",
+      API_ENDPOINTS.AUTH_LOGIN,
       credentials,
     );
     return response.data;
@@ -49,7 +50,7 @@ export const authApi = {
   // Register new user
   register: async (userData: RegisterRequest): Promise<UserProfile> => {
     const response = await api.post<UserProfile>(
-      "/api/auth/register/",
+      API_ENDPOINTS.AUTH_REGISTER,
       userData,
     );
     return response.data;
@@ -57,12 +58,12 @@ export const authApi = {
 
   // Logout user
   logout: async (refreshToken: string): Promise<void> => {
-    await api.post("/api/auth/logout/", { refresh: refreshToken });
+    await api.post(API_ENDPOINTS.AUTH_LOGOUT, { refresh: refreshToken });
   },
 
   // Get current user profile
   getCurrentUser: async (): Promise<UserProfile> => {
-    const response = await api.get<UserProfile>("/api/auth/user/");
+    const response = await api.get<UserProfile>(API_ENDPOINTS.AUTH_USER);
     return response.data;
   },
 
@@ -70,7 +71,7 @@ export const authApi = {
   updateProfile: async (
     userData: Partial<UserProfile>,
   ): Promise<UserProfile> => {
-    const response = await api.patch<UserProfile>("/api/auth/user/", userData);
+    const response = await api.patch<UserProfile>(API_ENDPOINTS.AUTH_USER, userData);
     return response.data;
   },
 
@@ -78,7 +79,7 @@ export const authApi = {
   changePassword: async (
     passwordData: ChangePasswordRequest,
   ): Promise<void> => {
-    await api.post("/api/auth/change-password/", passwordData);
+    await api.post(API_ENDPOINTS.AUTH_CHANGE_PASSWORD, passwordData);
   },
 
   // Request password reset
@@ -96,7 +97,7 @@ export const authApi = {
   // Refresh access token
   refreshToken: async (refreshToken: string): Promise<{ access: string }> => {
     const response = await api.post<{ access: string }>(
-      "/api/auth/token/refresh/",
+      API_ENDPOINTS.AUTH_REFRESH,
       {
         refresh: refreshToken,
       },
@@ -106,7 +107,7 @@ export const authApi = {
 
   // Verify token
   verifyToken: async (token: string): Promise<void> => {
-    await api.post("/api/auth/token/verify/", { token });
+    await api.post(API_ENDPOINTS.AUTH_VERIFY, { token });
   },
 };
 

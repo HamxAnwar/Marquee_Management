@@ -34,16 +34,23 @@ import {
 import { HallListItem } from '@/types';
 import { useHalls, useCreateHall, useToggleHallStatus } from '@/hooks/use-halls';
 import { CreateHallRequest } from '@/services/halls';
+import { useCurrentUser } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 
 export default function HallsPage() {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  
+
+  // Get current user to determine organization
+  const { data: user } = useCurrentUser();
+  const userOrganization = user?.owned_organizations?.[0]; // Get first owned organization
+
   // API hooks
-  const { data: hallsResponse, isLoading: hallsLoading, error: hallsError } = useHalls();
+  const { data: hallsResponse, isLoading: hallsLoading, error: hallsError } = useHalls(
+    userOrganization ? { organization: userOrganization.id } : undefined
+  );
   const createHallMutation = useCreateHall();
   const toggleStatusMutation = useToggleHallStatus();
-  
+
   const halls = hallsResponse?.results || [];
 
   // Handle form submission
@@ -55,7 +62,7 @@ export default function HallsPage() {
       description: formData.get('description') as string,
       is_active: true,
     };
-    
+
     try {
       await createHallMutation.mutateAsync(hallData);
       setIsDialogOpen(false);
@@ -125,7 +132,7 @@ export default function HallsPage() {
       header: "Base Price",
       cell: ({ row }) => {
         const price = parseFloat(row.getValue("base_price"));
-        return <div className="font-medium">₹{price.toLocaleString()}</div>;
+        return <div className="font-medium">PKR {price.toLocaleString()}</div>;
       },
     },
     {
@@ -211,7 +218,7 @@ export default function HallsPage() {
                 <Label htmlFor="price" className="text-right">
                   Base Price
                 </Label>
-                <Input id="price" name="price" type="number" placeholder="Base price in ₹" className="col-span-3" required />
+                 <Input id="price" name="price" type="number" placeholder="Base price in PKR" className="col-span-3" required />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="description" className="text-right">
@@ -269,7 +276,7 @@ export default function HallsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {halls.filter(h => h.is_active).length}
+              {halls.filter((h: any) => h.is_active).length}
             </div>
             <p className="text-xs text-muted-foreground">
               Currently available
@@ -284,7 +291,7 @@ export default function HallsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {halls.reduce((sum, hall) => sum + hall.capacity, 0).toLocaleString()}
+              {halls.reduce((sum: number, hall: any) => sum + hall.capacity, 0).toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
               Maximum guests
@@ -298,9 +305,9 @@ export default function HallsPage() {
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ₹{Math.round(halls.reduce((sum, hall) => sum + parseFloat(hall.base_price), 0) / halls.length).toLocaleString()}
-            </div>
+             <div className="text-2xl font-bold">
+                PKR {Math.round(halls.reduce((sum: number, hall: any) => sum + parseFloat(hall.base_price), 0) / halls.length).toLocaleString()}
+             </div>
             <p className="text-xs text-muted-foreground">
               Average base price
             </p>

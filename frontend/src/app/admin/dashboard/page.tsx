@@ -4,34 +4,37 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   LineChart,
   Line,
   PieChart,
   Pie,
-  Cell,
-  Legend
+  Cell
 } from 'recharts';
-import { 
+import {
   Calendar,
-  Users,
   Building2,
   ChefHat,
   DollarSign,
-  TrendingUp,
   Clock,
   CheckCircle,
   AlertTriangle,
-  Star
+  Star,
+  Loader2
 } from 'lucide-react';
+import { useCurrentUser } from '@/hooks/use-auth';
+import { useHalls } from '@/hooks/use-halls';
+import { useBookings } from '@/hooks/use-bookings';
+import { useMenuItems } from '@/hooks/use-menu';
+import type { BookingListItem } from '@/types';
 
 // Mock data - in real app this would come from API
 const statsData = [
@@ -61,7 +64,7 @@ const statsData = [
   },
   {
     title: 'Revenue',
-    value: '₹2.4M',
+    value: 'PKR 2.4M',
     change: '+18%',
     changeType: 'positive' as const,
     icon: DollarSign,
@@ -86,43 +89,100 @@ const eventTypesData = [
   { name: 'Other', value: 8, color: '#8dd1e1' },
 ];
 
-const recentBookings = [
-  {
-    id: 'BK123456',
-    customer: 'Ahmad Khan',
-    event: 'Wedding',
-    hall: 'Main Hall',
-    date: '2024-01-15',
-    amount: '₹85,000',
-    status: 'confirmed'
-  },
-  {
-    id: 'BK123457',
-    customer: 'Sarah Ahmed',
-    event: 'Corporate Event',
-    hall: 'Garden Hall',
-    date: '2024-01-18',
-    amount: '₹45,000',
-    status: 'pending'
-  },
-  {
-    id: 'BK123458',
-    customer: 'Ali Hassan',
-    event: 'Birthday Party',
-    hall: 'Main Hall',
-    date: '2024-01-20',
-    amount: '₹32,000',
-    status: 'confirmed'
-  }
-];
-
 export default function AdminDashboard() {
+  // Get current user and organization
+  const { data: user, isLoading: userLoading } = useCurrentUser();
+  const userOrganization = user?.owned_organizations?.[0];
+
+  // Get halls data for the organization
+  const { data: hallsResponse, isLoading: hallsLoading } = useHalls(
+    userOrganization ? { organization: userOrganization.id } : undefined
+  );
+
+  // Get bookings for the organization
+  const { data: bookingsResponse, isLoading: bookingsLoading } = useBookings(
+    userOrganization ? { organization: userOrganization.id } : undefined
+  );
+
+  // Get menu items for the organization
+  const { data: menuItemsResponse, isLoading: menuItemsLoading } = useMenuItems(
+    userOrganization ? { organization: userOrganization.id } : undefined
+  );
+
+  const halls = hallsResponse?.results || [];
+  const bookings = bookingsResponse?.results || [];
+  const menuItems = menuItemsResponse?.results || [];
+
+  const recentBookings = bookings.slice(0, 3).map((booking: BookingListItem) => ({
+    id: booking.booking_id,
+    customer: booking.customer_name,
+    event: booking.event_type_display,
+    hall: booking.hall_name || 'N/A',
+    date: booking.event_date,
+    amount: `PKR ${parseFloat(booking.total_amount || '0').toLocaleString()}`,
+    status: booking.status
+  }));
+
+  // Calculate stats from real data
+  const totalBookings = bookings.length;
+  const activeHalls = halls.filter((h: any) => h.is_active).length;
+  const activeMenuItems = menuItems.filter((item: any) => item.is_available).length;
+  const totalRevenue = bookings
+    .filter((b: BookingListItem) => b.status === 'completed')
+    .reduce((sum: number, b: BookingListItem) => sum + parseFloat(b.total_amount || '0'), 0);
+
+  const statsData = [
+    {
+      title: 'Total Bookings',
+      value: totalBookings.toString(),
+      change: '+0%', // TODO: Calculate month-over-month
+      changeType: 'positive' as const,
+      icon: Calendar,
+      description: 'All time'
+    },
+    {
+      title: 'Active Halls',
+      value: activeHalls.toString(),
+      change: '+0',
+      changeType: 'positive' as const,
+      icon: Building2,
+      description: 'Currently available'
+    },
+    {
+      title: 'Menu Items',
+      value: activeMenuItems.toString(),
+      change: '+0',
+      changeType: 'positive' as const,
+      icon: ChefHat,
+      description: 'Active items'
+    },
+    {
+      title: 'Revenue',
+      value: `PKR ${totalRevenue.toLocaleString()}`,
+      change: '+0%',
+      changeType: 'positive' as const,
+      icon: DollarSign,
+      description: 'All time'
+    }
+  ];
+
+  if (userLoading || hallsLoading || bookingsLoading || menuItemsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading dashboard...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-2">Welcome back! Here's what's happening with your marquee business.</p>
+        <p className="text-gray-600 mt-2">
+          Welcome back{userOrganization ? ` to ${userOrganization.name}` : ''}! Here's what's happening with your marquee business.
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -188,7 +248,7 @@ export default function AdminDashboard() {
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
                 >
                   {eventTypesData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
@@ -213,7 +273,7 @@ export default function AdminDashboard() {
             <Button variant="outline" size="sm">View All</Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recentBookings.map((booking) => (
+            {recentBookings.map((booking: any) => (
               <div key={booking.id} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
@@ -291,7 +351,7 @@ export default function AdminDashboard() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value) => [`₹${(value as number).toLocaleString()}`, 'Revenue']} />
+              <Tooltip formatter={(value) => [`PKR ${(value as number).toLocaleString()}`, 'Revenue']} />
               <Line type="monotone" dataKey="revenue" stroke="#8884d8" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>

@@ -25,7 +25,19 @@ from apps.pricing.models import PricingRule
 
 def create_sample_data():
     print("🎪 Creating sample data for Marquee Booking System...")
-    
+
+    # Run the menu population script first
+    print("🍽️ Populating comprehensive menu data...")
+    try:
+        import subprocess
+        result = subprocess.run([sys.executable, 'populate_menu_data.py'], capture_output=True, text=True)
+        if result.returncode == 0:
+            print("✅ Menu data populated successfully!")
+        else:
+            print("⚠️ Menu population had some issues, continuing...")
+    except Exception as e:
+        print(f"⚠️ Could not run menu population script: {e}")
+
     # Create Halls
     print("📍 Creating halls...")
     hall1, created = Hall.objects.get_or_create(

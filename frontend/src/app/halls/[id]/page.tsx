@@ -70,7 +70,7 @@ export default function HallDetailsPage() {
     if (hallId) {
       fetchHallDetails();
     }
-  }, [hallId]);
+  }, [hallId, fetchHallDetails]);
 
   const fetchHallDetails = async () => {
     try {

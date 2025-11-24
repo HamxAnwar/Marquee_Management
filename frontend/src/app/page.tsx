@@ -365,14 +365,11 @@ export default function Home() {
                   List Your Venue
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link
-                  href="/partner-benefits"
-                  className="text-primary-foreground border-primary-foreground hover:bg-primary-foreground hover:text-primary"
-                >
-                  Learn More
-                </Link>
-              </Button>
+               <Button asChild size="lg" variant="secondary">
+                 <Link href="/partner-benefits">
+                   Learn More
+                 </Link>
+               </Button>
             </div>
           </div>
         </div>

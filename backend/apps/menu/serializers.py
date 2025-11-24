@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import MenuCategory, MenuItem, MenuItemVariant
+from .models import MenuCategory, MenuItem, MenuItemVariant, MenuPackage, PackageMenuItem
 
 
 class MenuCategorySerializer(serializers.ModelSerializer):
@@ -117,22 +117,91 @@ class MenuItemCreateSerializer(serializers.ModelSerializer):
         required=False,
         help_text="List of variant objects with name, price_modifier, is_available"
     )
-    
+
     class Meta:
         model = MenuItem
         fields = ['name', 'category', 'description', 'base_price', 'serving_type',
-                 'is_vegetarian', 'is_available', 'image', 'ingredients', 
+                 'is_vegetarian', 'is_available', 'image', 'ingredients',
                  'preparation_time', 'display_order', 'variants_data']
-    
+
     def create(self, validated_data):
         variants_data = validated_data.pop('variants_data', [])
         menu_item = MenuItem.objects.create(**validated_data)
-        
+
         # Create variants if provided
         for variant_data in variants_data:
             MenuItemVariant.objects.create(menu_item=menu_item, **variant_data)
-        
+
         return menu_item
-    
+
     def to_representation(self, instance):
         return MenuItemSerializer(instance).data
+
+
+class PackageMenuItemSerializer(serializers.ModelSerializer):
+    """Serializer for PackageMenuItem model"""
+    menu_item_name = serializers.CharField(source='menu_item.name', read_only=True)
+    menu_item_category = serializers.CharField(source='menu_item.category.name', read_only=True)
+    variant_name = serializers.CharField(source='variant.name', read_only=True, allow_null=True)
+
+    class Meta:
+        model = PackageMenuItem
+        fields = ['id', 'menu_item', 'menu_item_name', 'menu_item_category',
+                 'variant', 'variant_name', 'quantity_per_person', 'is_optional',
+                 'additional_cost']
+        read_only_fields = ['id']
+
+
+class MenuPackageSerializer(serializers.ModelSerializer):
+    """Serializer for MenuPackage model"""
+    package_type_display = serializers.CharField(source='get_package_type_display', read_only=True)
+    total_items = serializers.ReadOnlyField()
+    package_items = PackageMenuItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = MenuPackage
+        fields = ['id', 'name', 'description', 'package_type', 'package_type_display',
+                 'base_price_per_person', 'min_guests', 'max_guests', 'total_items',
+                 'is_active', 'is_featured', 'image', 'package_items', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class MenuPackageListSerializer(serializers.ModelSerializer):
+    """Simplified serializer for listing menu packages"""
+    package_type_display = serializers.CharField(source='get_package_type_display', read_only=True)
+    total_items = serializers.ReadOnlyField()
+
+    class Meta:
+        model = MenuPackage
+        fields = ['id', 'name', 'description', 'package_type_display',
+                 'base_price_per_person', 'min_guests', 'max_guests', 'total_items',
+                 'is_active', 'is_featured', 'image']
+
+
+class MenuPackageCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating menu packages with items"""
+    package_items_data = serializers.ListField(
+        child=serializers.DictField(),
+        write_only=True,
+        required=False,
+        help_text="List of package item objects with menu_item, variant, quantity_per_person, is_optional, additional_cost"
+    )
+
+    class Meta:
+        model = MenuPackage
+        fields = ['name', 'description', 'package_type', 'base_price_per_person',
+                 'min_guests', 'max_guests', 'is_active', 'is_featured', 'image',
+                 'package_items_data']
+
+    def create(self, validated_data):
+        package_items_data = validated_data.pop('package_items_data', [])
+        package = MenuPackage.objects.create(**validated_data)
+
+        # Create package items if provided
+        for item_data in package_items_data:
+            PackageMenuItem.objects.create(package=package, **item_data)
+
+        return package
+
+    def to_representation(self, instance):
+        return MenuPackageSerializer(instance).data

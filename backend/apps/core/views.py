@@ -14,8 +14,8 @@ class HallViewSet(viewsets.ModelViewSet):
     """ViewSet for managing halls"""
     queryset = Hall.objects.all()
     serializer_class = HallSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    
+    permission_classes = [permissions.IsAuthenticated]
+
     def get_serializer_class(self):
         if self.action == 'list':
             return HallListSerializer

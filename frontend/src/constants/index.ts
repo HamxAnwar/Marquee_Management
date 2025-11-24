@@ -4,46 +4,49 @@ export const API_BASE_URL =
 
 export const API_ENDPOINTS = {
   // Core endpoints
-  HALLS: "/api/core/halls",
-  DISCOUNT_TIERS: "/api/core/discount-tiers",
-  USERS: "/api/core/users",
-  USER_PROFILES: "/api/core/user-profiles",
+  HALLS: "/api/v1/core/halls/",
+  DISCOUNT_TIERS: "/api/v1/core/discount-tiers/",
+  USERS: "/api/v1/core/users/",
+  USER_PROFILES: "/api/v1/core/user-profiles/",
 
   // Organization endpoints
-  ORGANIZATIONS: "/api/organizations",
-  MARKETPLACE: "/api/marketplace",
-  ORGANIZATION_REGISTER: "/api/organizations",
-  ORGANIZATION_APPROVE: "/api/organizations/{id}/approve",
-  ORGANIZATION_SUSPEND: "/api/organizations/{id}/suspend",
-  ORGANIZATION_MEMBERS: "/api/organizations/{id}/members",
-  ORGANIZATION_STATS: "/api/organizations/{id}/stats",
+  ORGANIZATIONS: "/api/v1/organizations/",
+  MARKETPLACE: "/api/v1/marketplace/",
+  ORGANIZATION_REGISTER: "/api/v1/organizations/",
+  ORGANIZATION_APPROVE: "/api/v1/organizations/{id}/approve/",
+  ORGANIZATION_SUSPEND: "/api/v1/organizations/{id}/suspend/",
+  ORGANIZATION_MEMBERS: "/api/v1/organizations/{id}/members/",
+  ORGANIZATION_STATS: "/api/v1/organizations/{id}/stats/",
 
   // Platform admin endpoints
-  PLATFORM_ADMIN: "/api/admin",
-  PLATFORM_SETTINGS: "/api/admin/settings",
-  PLATFORM_PENDING: "/api/admin/pending-approvals",
-  PLATFORM_BULK_APPROVE: "/api/admin/bulk-approve",
-  PLATFORM_BULK_SUSPEND: "/api/admin/bulk-suspend",
+  PLATFORM_ADMIN: "/api/v1/organizations/admin/",
+  PLATFORM_SETTINGS: "/api/v1/organizations/admin/settings/",
+  PLATFORM_PENDING: "/api/v1/organizations/admin/pending-approvals/",
+  PLATFORM_BULK_APPROVE: "/api/v1/organizations/admin/bulk-approve/",
+  PLATFORM_BULK_SUSPEND: "/api/v1/organizations/admin/bulk-suspend/",
 
   // Menu endpoints
-  MENU_CATEGORIES: "/api/menu/categories",
-  MENU_ITEMS: "/api/menu/items",
-  MENU_VARIANTS: "/api/menu/variants",
-  MENU_PACKAGES: "/api/menu/packages",
+  MENU_CATEGORIES: "/api/v1/menu/categories/",
+  MENU_ITEMS: "/api/v1/menu/items/",
+  MENU_VARIANTS: "/api/v1/menu/variants/",
+  MENU_PACKAGES: "/api/v1/menu/packages/",
 
-  // Booking endpoints
-  BOOKINGS: "/api/bookings/bookings",
+   // Booking endpoints
+   BOOKINGS: "/api/v1/bookings",
 
   // Pricing endpoints
-  PRICING_CALCULATE: "/api/pricing/calculate",
-  PRICING_SUGGEST: "/api/pricing/suggest",
-  PRICING_RULES: "/api/pricing/rules",
+  PRICING_CALCULATE: "/api/v1/pricing/calculate/",
+  PRICING_SUGGEST: "/api/v1/pricing/suggest/",
+  PRICING_RULES: "/api/v1/pricing/rules/",
 
   // Auth endpoints
-  AUTH_LOGIN: "/api/auth/login",
-  AUTH_REGISTER: "/api/auth/register",
-  AUTH_LOGOUT: "/api/auth/logout",
-  AUTH_REFRESH: "/api/auth/token/refresh",
+  AUTH_LOGIN: "/api/v1/auth/login/",
+  AUTH_REGISTER: "/api/v1/auth/register/",
+  AUTH_LOGOUT: "/api/v1/auth/logout/",
+  AUTH_USER: "/api/v1/auth/user/",
+  AUTH_CHANGE_PASSWORD: "/api/v1/auth/change-password/",
+  AUTH_REFRESH: "/api/v1/auth/token/refresh/",
+  AUTH_VERIFY: "/api/v1/auth/token/verify/",
 } as const;
 
 // Event Types
@@ -108,7 +111,7 @@ export const VALIDATION = {
 
 // Local Storage Keys
 export const STORAGE_KEYS = {
-  AUTH_TOKEN: "auth_token",
+  AUTH_TOKEN: "access_token",
   REFRESH_TOKEN: "refresh_token",
   USER_DATA: "user_data",
   CART_ITEMS: "cart_items",

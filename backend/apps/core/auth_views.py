@@ -6,6 +6,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import get_user_model
 from .serializers import UserProfileSerializer
+from typing import Any, Dict
 
 User = get_user_model()
 
@@ -16,7 +17,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         # Add custom user data to the response
         user_serializer = UserProfileSerializer(self.user)
-        data["user"] = user_serializer.data
+        data["user"] = user_serializer.data  # type: ignore
+
+        # For backward compatibility, also include 'token' field with access token
+        data["token"] = data.get("access", "")  # type: ignore
 
         return data
 

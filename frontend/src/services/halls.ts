@@ -27,7 +27,13 @@ export interface HallQueryParams {
 
 export const hallsApi = {
   // Get all halls with pagination and filters
-  getHalls: async (params?: HallQueryParams): Promise<ApiResponse<HallListItem>> => {
+  getHalls: async (params?: HallQueryParams & { organization?: number }): Promise<ApiResponse<HallListItem>> => {
+    // If organization is specified, use marketplace endpoint
+    if (params?.organization) {
+      const response = await api.get<ApiResponse<HallListItem>>(`/marketplace/${params.organization}/halls/`);
+      return response.data;
+    }
+    // Otherwise use general halls endpoint
     const response = await api.get<ApiResponse<HallListItem>>('/halls/', { params });
     return response.data;
   },
@@ -39,7 +45,9 @@ export const hallsApi = {
   },
 
   // Create new hall
-  createHall: async (hallData: CreateHallRequest): Promise<Hall> => {
+  createHall: async (hallData: CreateHallRequest & { organization?: number }): Promise<Hall> => {
+    // If organization is specified, the hall will be created for that organization
+    // The backend should handle this automatically based on the user's permissions
     const response = await api.post<Hall>('/halls/', hallData);
     return response.data;
   },

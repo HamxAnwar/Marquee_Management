@@ -6,6 +6,29 @@ export interface ApiResponse<T> {
   results: T[];
 }
 
+// Organization Types
+export interface Organization {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  email: string;
+  phone: string;
+  city: string;
+  state: string;
+  country: string;
+  website?: string;
+  logo?: string;
+  cover_image?: string;
+  subscription_plan: string;
+  status: 'active' | 'inactive' | 'suspended';
+  owner: User;
+  total_halls: number;
+  total_bookings: number;
+  avg_rating?: number;
+  created_at: string;
+}
+
 // User Types
 export interface User {
   id: number;
@@ -26,6 +49,12 @@ export interface UserProfile {
   address?: string;
   preferred_contact?: 'phone' | 'email' | 'both';
   role: 'admin' | 'staff' | 'customer';
+  owned_organizations?: Array<{
+    id: number;
+    name: string;
+    slug: string;
+    status: string;
+  }>;
   is_staff: boolean;
   is_active: boolean;
 }
@@ -152,10 +181,15 @@ export interface Booking {
 }
 
 export interface BookingListItem {
+  id: number;
   booking_id: string;
   customer_name: string;
+  customer_phone: string;
+  customer_email: string;
   hall_name: string;
   event_date: string;
+  event_time: string;
+  event_type: string;
   event_type_display: string;
   guest_count: number;
   total_amount: string;
@@ -292,4 +326,68 @@ export interface Cart {
   items: CartItem[];
   total_items: number;
   subtotal: number;
+}
+
+// Platform Admin Types
+export interface PlatformStats {
+  users: {
+    total: number;
+    active: number;
+    platform_admins: number;
+    venue_owners: number;
+    customers: number;
+  };
+  organizations: {
+    total: number;
+    active: number;
+    pending: number;
+    suspended: number;
+  };
+  system_health: {
+    recent_registrations: number;
+    api_calls_today: number;
+  };
+  top_organizations: {
+    id: number;
+    name: string;
+    user_count: number;
+    status: string;
+    subscription_plan: string;
+  }[];
+  recent_activities: {
+    users: {
+      id: number;
+      username: string;
+      email: string;
+      user_type: string;
+      created_at: string;
+    }[];
+    organizations: {
+      id: number;
+      name: string;
+      status: string;
+      created_at: string;
+    }[];
+  };
+}
+
+export interface PlatformSettings {
+  id: number;
+  platform_name: string;
+  platform_email: string;
+  platform_phone: string;
+  support_email: string;
+  maintenance_mode: boolean;
+  maintenance_message: string;
+  api_rate_limit: number;
+  allow_user_registration: boolean;
+  require_email_verification: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BulkActionResponse {
+  message: string;
+  approved_count?: number;
+  suspended_count?: number;
 }

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/nix/store/qsydfxm1vq6q9jac2kq3r8kn0xdmsldf-bash-5.3p3/bin/bash
 
 # Colors for output
 GREEN='\033[0;32m'

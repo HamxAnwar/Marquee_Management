@@ -34,6 +34,7 @@ export interface MenuItemQueryParams {
   page_size?: number;
   search?: string;
   category?: number;
+  organization?: number;
   is_vegetarian?: boolean;
   is_available?: boolean;
   min_price?: number;

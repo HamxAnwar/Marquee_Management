@@ -6,39 +6,20 @@ from . import views
 router = DefaultRouter()
 router.register(r"", views.OrganizationViewSet, basename="organizations")
 
-# Platform admin router
-admin_router = DefaultRouter()
-admin_router.register(r"", views.PlatformAdminViewSet, basename="platform-admin")
-
 # Marketplace router
 marketplace_router = DefaultRouter()
 marketplace_router.register(r"", views.MarketplaceViewSet, basename="marketplace")
 
 urlpatterns = [
-    # Organization management routes
-    path("", include(router.urls)),
     # Platform admin routes
-    path("admin/", include(admin_router.urls)),
+    path("admin/", views.PlatformAdminViewSet.as_view(), name="platform-admin"),
     path(
         "admin/settings/",
-        views.PlatformAdminViewSet.as_view({"get": "settings", "patch": "settings"}),
+        views.PlatformSettingsView.as_view(),
         name="platform-settings",
     ),
-    path(
-        "admin/pending-approvals/",
-        views.PlatformAdminViewSet.as_view({"get": "pending_approvals"}),
-        name="platform-pending-approvals",
-    ),
-    path(
-        "admin/bulk-approve/",
-        views.PlatformAdminViewSet.as_view({"post": "bulk_approve"}),
-        name="platform-bulk-approve",
-    ),
-    path(
-        "admin/bulk-suspend/",
-        views.PlatformAdminViewSet.as_view({"post": "bulk_suspend"}),
-        name="platform-bulk-suspend",
-    ),
+    # Organization management routes
+    path("", include(router.urls)),
     # Marketplace routes
     path("marketplace/", include(marketplace_router.urls)),
     path(
@@ -86,5 +67,10 @@ urlpatterns = [
         "<int:pk>/stats/",
         views.OrganizationViewSet.as_view({"get": "stats"}),
         name="organization-stats",
+    ),
+    path(
+        "<int:pk>/bookings/",
+        views.OrganizationViewSet.as_view({"get": "bookings"}),
+        name="organization-bookings",
     ),
 ]

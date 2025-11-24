@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,6 @@ import {
   SearchIcon,
   MapPinIcon,
   StarIcon,
-  UsersIcon,
   FilterIcon,
   HeartIcon,
   ShareIcon,
@@ -30,122 +29,12 @@ import {
   CarIcon,
   UtensilsIcon,
   MusicIcon,
+  Loader2Icon,
 } from "lucide-react";
 import { APP_NAME } from "@/constants";
-
-// Mock data for venues
-const mockVenues = [
-  {
-    id: 1,
-    name: "Royal Gardens Marquee",
-    organization: "Elegant Events Co.",
-    city: "Karachi",
-    area: "Clifton",
-    rating: 4.8,
-    reviewCount: 124,
-    minPrice: 25000,
-    maxPrice: 45000,
-    capacity: 500,
-    images: ["/api/placeholder/400/300"],
-    amenities: ["parking", "ac", "kitchen", "sound"],
-    isVerified: true,
-    isPopular: true,
-    description: "Luxurious outdoor venue with beautiful garden settings",
-  },
-  {
-    id: 2,
-    name: "Grand Ballroom Hall",
-    organization: "Premium Venues Ltd.",
-    city: "Lahore",
-    area: "DHA Phase 5",
-    rating: 4.6,
-    reviewCount: 89,
-    minPrice: 35000,
-    maxPrice: 55000,
-    capacity: 300,
-    images: ["/api/placeholder/400/300"],
-    amenities: ["ac", "sound", "stage"],
-    isVerified: true,
-    isPopular: false,
-    description: "Modern indoor hall perfect for weddings and corporate events",
-  },
-  {
-    id: 3,
-    name: "Heritage Palace",
-    organization: "Royal Venues",
-    city: "Islamabad",
-    area: "F-7",
-    rating: 4.9,
-    reviewCount: 156,
-    minPrice: 40000,
-    maxPrice: 70000,
-    capacity: 600,
-    images: ["/api/placeholder/400/300"],
-    amenities: ["parking", "ac", "kitchen", "sound", "stage"],
-    isVerified: true,
-    isPopular: true,
-    description: "Elegant heritage-style venue with traditional architecture",
-  },
-  {
-    id: 4,
-    name: "Sunset Lawn",
-    organization: "Garden Events",
-    city: "Quetta",
-    area: "Cantonment",
-    rating: 4.4,
-    reviewCount: 67,
-    minPrice: 20000,
-    maxPrice: 35000,
-    capacity: 400,
-    images: ["/api/placeholder/400/300"],
-    amenities: ["parking", "sound"],
-    isVerified: true,
-    isPopular: false,
-    description: "Beautiful outdoor lawn venue with mountain views",
-  },
-  {
-    id: 5,
-    name: "Crystal Convention Center",
-    organization: "Modern Events",
-    city: "Karachi",
-    area: "Gulshan-e-Iqbal",
-    rating: 4.7,
-    reviewCount: 203,
-    minPrice: 30000,
-    maxPrice: 50000,
-    capacity: 800,
-    images: ["/api/placeholder/400/300"],
-    amenities: ["parking", "ac", "kitchen", "sound", "stage"],
-    isVerified: true,
-    isPopular: true,
-    description: "State-of-the-art convention center for large events",
-  },
-  {
-    id: 6,
-    name: "Riverside Marquee",
-    organization: "Waterfront Venues",
-    city: "Lahore",
-    area: "Ravi Road",
-    rating: 4.3,
-    reviewCount: 45,
-    minPrice: 18000,
-    maxPrice: 28000,
-    capacity: 250,
-    images: ["/api/placeholder/400/300"],
-    amenities: ["parking", "sound"],
-    isVerified: false,
-    isPopular: false,
-    description: "Charming riverside venue perfect for intimate celebrations",
-  },
-];
-
-const amenityIcons = {
-  parking: CarIcon,
-  ac: WifiIcon, // Using WiFi icon as AC placeholder
-  kitchen: UtensilsIcon,
-  sound: MusicIcon,
-  stage: BuildingIcon,
-};
+import { useQuery } from "@tanstack/react-query";
+import { marketplaceApi } from "@/services/marketplace";
+import type { Organization } from "@/types";
 
 const amenityLabels = {
   parking: "Parking",
@@ -164,7 +53,35 @@ export default function MarketplacePage() {
   const [sortBy, setSortBy] = useState("popularity");
   const [showFilters, setShowFilters] = useState(false);
 
-  const cities = [...new Set(mockVenues.map((venue) => venue.city))];
+  // Fetch organizations from API
+  const { data: organizationsData, isLoading, error } = useQuery({
+    queryKey: ['marketplace-organizations'],
+    queryFn: () => marketplaceApi.getOrganizations(),
+  });
+
+  const organizations = organizationsData?.results || [];
+
+  // Transform organizations to venue-like structure for filtering
+  const venues = organizations.map((org: Organization) => ({
+    id: org.id,
+    name: org.name,
+    organization: org.name,
+    city: org.city,
+    area: org.state || org.city,
+    rating: org.avg_rating || 0,
+    reviewCount: org.total_bookings,
+    minPrice: 0, // We'll need to get this from halls
+    maxPrice: 0,
+    capacity: 0, // We'll need to get this from halls
+    images: [org.cover_image || "/api/placeholder/400/300"],
+    amenities: [], // We'll need to get this from halls
+    isVerified: org.status === 'active',
+    isPopular: org.total_bookings > 5,
+    description: org.description,
+    totalHalls: org.total_halls,
+  }));
+
+  const cities = [...new Set(venues.map((venue) => venue.city))];
   const capacityRanges = [
     { label: "Up to 100", value: "0-100" },
     { label: "100 - 300", value: "100-300" },
@@ -179,7 +96,9 @@ export default function MarketplacePage() {
   ];
 
   const filteredVenues = useMemo(() => {
-    let filtered = mockVenues.filter((venue) => {
+    if (!venues.length) return [];
+
+    const filtered = venues.filter((venue) => {
       // Search query filter
       if (
         searchQuery &&
@@ -199,51 +118,14 @@ export default function MarketplacePage() {
         return false;
       }
 
-      // Capacity filter
-      if (selectedCapacity && selectedCapacity !== "all") {
-        const [min, max] = selectedCapacity.split("-").map(Number);
-        if (max) {
-          if (venue.capacity < min || venue.capacity > max) return false;
-        } else {
-          if (venue.capacity < min) return false;
-        }
-      }
-
-      // Price range filter
-      if (priceRange && priceRange !== "all") {
-        const [min, max] = priceRange.split("-").map(Number);
-        if (max) {
-          if (venue.maxPrice < min || venue.minPrice > max) return false;
-        } else {
-          if (venue.maxPrice < min) return false;
-        }
-      }
-
-      // Amenities filter
-      if (selectedAmenities.length > 0) {
-        if (
-          !selectedAmenities.every((amenity) =>
-            venue.amenities.includes(amenity),
-          )
-        ) {
-          return false;
-        }
-      }
-
       return true;
     });
 
     // Sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
-        case "price-low":
-          return a.minPrice - b.minPrice;
-        case "price-high":
-          return b.minPrice - a.minPrice;
         case "rating":
           return b.rating - a.rating;
-        case "capacity":
-          return b.capacity - a.capacity;
         case "popularity":
         default:
           return (
@@ -254,11 +136,9 @@ export default function MarketplacePage() {
 
     return filtered;
   }, [
+    venues,
     searchQuery,
     selectedCity,
-    selectedCapacity,
-    priceRange,
-    selectedAmenities,
     sortBy,
   ]);
 
@@ -435,8 +315,7 @@ export default function MarketplacePage() {
           <div>
             <h1 className="text-2xl font-bold">Event Venues</h1>
             <p className="text-muted-foreground">
-              {filteredVenues.length} venue
-              {filteredVenues.length !== 1 ? "s" : ""} found
+              {isLoading ? "Loading venues..." : `${filteredVenues.length} venue${filteredVenues.length !== 1 ? "s" : ""} found`}
             </p>
           </div>
           <Select value={sortBy} onValueChange={setSortBy}>
@@ -446,142 +325,126 @@ export default function MarketplacePage() {
             <SelectContent>
               <SelectItem value="popularity">Most Popular</SelectItem>
               <SelectItem value="rating">Highest Rated</SelectItem>
-              <SelectItem value="price-low">Price: Low to High</SelectItem>
-              <SelectItem value="price-high">Price: High to Low</SelectItem>
-              <SelectItem value="capacity">Largest Capacity</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex justify-center py-12">
+            <Loader2Icon className="h-8 w-8 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-muted-foreground">Loading venues...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-12">
+            <BuildingIcon className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Failed to load venues</h3>
+            <p className="text-muted-foreground mb-4">
+              There was an error loading the venue data. Please try again later.
+            </p>
+            <Button onClick={() => window.location.reload()}>Try Again</Button>
+          </div>
+        )}
+
         {/* Venues Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredVenues.map((venue) => (
-            <Card
-              key={venue.id}
-              className="group hover:shadow-lg transition-all duration-200 overflow-hidden"
-            >
-              <div className="relative aspect-[4/3] overflow-hidden">
-                <Image
-                  src={venue.images[0]}
-                  alt={venue.name}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-200"
-                />
-                <div className="absolute top-3 left-3 flex gap-1">
-                  {venue.isPopular && (
-                    <Badge className="bg-primary text-primary-foreground">
-                      Popular
-                    </Badge>
-                  )}
-                  {venue.isVerified && (
-                    <Badge
-                      variant="secondary"
-                      className="bg-green-100 text-green-800"
-                    >
-                      <CheckCircleIcon className="w-3 h-3 mr-1" />
-                      Verified
-                    </Badge>
-                  )}
-                </div>
-                <div className="absolute top-3 right-3 flex gap-1">
-                  <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
-                    <HeartIcon className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
-                    <ShareIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              <CardContent className="p-4">
-                <div className="space-y-2">
-                  <div>
-                    <h3 className="font-semibold text-lg leading-none">
-                      {venue.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {venue.organization}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-1 text-sm">
-                    <MapPinIcon className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">
-                      {venue.area}, {venue.city}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <StarIcon className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-medium">
-                        {venue.rating}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        ({venue.reviewCount})
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <UsersIcon className="h-4 w-4" />
-                      <span>Up to {venue.capacity}</span>
-                    </div>
-                  </div>
-
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {venue.description}
-                  </p>
-
-                  <div className="flex items-center gap-2 py-2">
-                    {venue.amenities.slice(0, 4).map((amenity) => {
-                      const IconComponent =
-                        amenityIcons[amenity as keyof typeof amenityIcons];
-                      return IconComponent ? (
-                        <div
-                          key={amenity}
-                          className="flex items-center gap-1 text-xs text-muted-foreground"
-                        >
-                          <IconComponent className="h-3 w-3" />
-                          <span className="sr-only">
-                            {
-                              amenityLabels[
-                                amenity as keyof typeof amenityLabels
-                              ]
-                            }
-                          </span>
-                        </div>
-                      ) : null;
-                    })}
-                    {venue.amenities.length > 4 && (
-                      <span className="text-xs text-muted-foreground">
-                        +{venue.amenities.length - 4} more
-                      </span>
+        {!isLoading && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredVenues.map((venue) => (
+              <Card
+                key={venue.id}
+                className="group hover:shadow-lg transition-all duration-200 overflow-hidden"
+              >
+                <div className="relative aspect-[4/3] overflow-hidden">
+                  <Image
+                    src={venue.images[0]}
+                    alt={venue.name}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-200"
+                  />
+                  <div className="absolute top-3 left-3 flex gap-1">
+                    {venue.isPopular && (
+                      <Badge className="bg-primary text-primary-foreground">
+                        Popular
+                      </Badge>
+                    )}
+                    {venue.isVerified && (
+                      <Badge
+                        variant="secondary"
+                        className="bg-green-100 text-green-800"
+                      >
+                        <CheckCircleIcon className="w-3 h-3 mr-1" />
+                        Verified
+                      </Badge>
                     )}
                   </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t">
-                    <div>
-                      <span className="text-lg font-bold">
-                        PKR {venue.minPrice.toLocaleString()}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        {" "}
-                        onwards
-                      </span>
-                    </div>
-                    <Button asChild size="sm">
-                      <Link href={`/marketplace/${venue.id}`}>
-                        View Details
-                      </Link>
+                  <div className="absolute top-3 right-3 flex gap-1">
+                    <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
+                      <HeartIcon className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
+                      <ShareIcon className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+
+                <CardContent className="p-4">
+                  <div className="space-y-2">
+                    <div>
+                      <h3 className="font-semibold text-lg leading-none">
+                        {venue.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {venue.totalHalls} hall{venue.totalHalls !== 1 ? 's' : ''} available
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1 text-sm">
+                      <MapPinIcon className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">
+                        {venue.city}, {venue.state || venue.country}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <StarIcon className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm font-medium">
+                          {venue.rating > 0 ? venue.rating.toFixed(1) : 'New'}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          ({venue.reviewCount} booking{venue.reviewCount !== 1 ? 's' : ''})
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {venue.description}
+                    </p>
+
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <div>
+                        <span className="text-sm text-muted-foreground">
+                          Contact: {venue.organization}
+                        </span>
+                      </div>
+                      <Button asChild size="sm">
+                        <Link href={`/marketplace/${venue.id}`}>
+                          View Details
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {/* No Results */}
-        {filteredVenues.length === 0 && (
+        {!isLoading && !error && filteredVenues.length === 0 && (
           <div className="text-center py-12">
             <BuildingIcon className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No venues found</h3>

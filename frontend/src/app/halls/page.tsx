@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -187,10 +188,11 @@ export default function HallsPage() {
               <Card key={hall.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
                   {hall.image_url ? (
-                    <img
+                    <Image
                       src={hall.image_url}
                       alt={hall.name}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
                     />
                   ) : (
                     <SparklesIcon className="h-16 w-16 text-primary/40" />

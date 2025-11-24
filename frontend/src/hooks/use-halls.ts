@@ -3,9 +3,9 @@ import { hallsApi, type CreateHallRequest, type HallQueryParams } from '@/servic
 import { queryKeys } from '@/lib/react-query';
 
 // Get halls with pagination and filters
-export const useHalls = (params?: HallQueryParams) => {
+export const useHalls = (params?: HallQueryParams & { organization?: number }) => {
   return useQuery({
-    queryKey: queryKeys.halls.list(params),
+    queryKey: queryKeys.halls.all(params?.organization),
     queryFn: () => hallsApi.getHalls(params),
   });
 };
@@ -22,7 +22,7 @@ export const useHall = (id: number) => {
 // Get active halls (simplified list)
 export const useActiveHalls = () => {
   return useQuery({
-    queryKey: queryKeys.halls.list({ is_active: true }),
+    queryKey: queryKeys.halls.all(),
     queryFn: () => hallsApi.getActiveHalls(),
   });
 };
@@ -53,7 +53,8 @@ export const useCreateHall = () => {
     mutationFn: (hallData: CreateHallRequest) => hallsApi.createHall(hallData),
     onSuccess: () => {
       // Invalidate halls list
-      queryClient.invalidateQueries({ queryKey: queryKeys.halls.lists() });
+      queryClient.invalidateQueries({ queryKey: ["halls"] });
+      queryClient.invalidateQueries({ queryKey: ["organizations"] });
     },
   });
 };
@@ -67,7 +68,8 @@ export const useUpdateHall = () => {
       hallsApi.updateHall(id, data),
     onSuccess: (_, variables) => {
       // Invalidate halls list and specific hall detail
-      queryClient.invalidateQueries({ queryKey: queryKeys.halls.lists() });
+      queryClient.invalidateQueries({ queryKey: ["halls"] });
+      queryClient.invalidateQueries({ queryKey: ["organizations"] });
       queryClient.invalidateQueries({ queryKey: queryKeys.halls.detail(variables.id) });
     },
   });
@@ -81,7 +83,8 @@ export const useDeleteHall = () => {
     mutationFn: (id: number) => hallsApi.deleteHall(id),
     onSuccess: () => {
       // Invalidate halls list
-      queryClient.invalidateQueries({ queryKey: queryKeys.halls.lists() });
+      queryClient.invalidateQueries({ queryKey: ["halls"] });
+      queryClient.invalidateQueries({ queryKey: ["organizations"] });
     },
   });
 };
@@ -94,7 +97,8 @@ export const useToggleHallStatus = () => {
     mutationFn: (id: number) => hallsApi.toggleHallStatus(id),
     onSuccess: (_, id) => {
       // Invalidate halls list and specific hall detail
-      queryClient.invalidateQueries({ queryKey: queryKeys.halls.lists() });
+      queryClient.invalidateQueries({ queryKey: ["halls"] });
+      queryClient.invalidateQueries({ queryKey: ["organizations"] });
       queryClient.invalidateQueries({ queryKey: queryKeys.halls.detail(id) });
     },
   });
@@ -132,7 +136,8 @@ export const useOptimisticHallStatusToggle = () => {
     onSettled: (_, __, id) => {
       // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: queryKeys.halls.detail(id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.halls.lists() });
+      queryClient.invalidateQueries({ queryKey: ["halls"] });
+      queryClient.invalidateQueries({ queryKey: ["organizations"] });
     },
   });
 };
